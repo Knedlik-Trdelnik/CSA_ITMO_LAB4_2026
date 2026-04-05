@@ -1,18 +1,3 @@
-#!/usr/bin/python3
-"""Модель процессора, позволяющая выполнить машинный код полученный из программы
-на языке Brainfuck.
-
-Модель включает в себя три основных компонента:
-
-- `DataPath` -- работа с памятью данных и вводом-выводом.
-
-- `ControlUnit` -- работа с памятью команд и их интерпретация.
-
-- и набор вспомогательных функций: `simulation`, `main`.
-"""
-from atexit import register
-from typing import reveal_type
-
 from isa import Opcode, opcode_to_binary, binary_to_opcode
 
 
@@ -59,6 +44,12 @@ class ALU:
 
     def bite_inv(self):
         self.alu_output = ~self.left
+
+    def bite_lshift(self):
+        self.alu_output = self.left << 1
+
+    def bite_rshift(self):
+        self.alu_output = self.left >> 1
 
 
 class DataPath:
@@ -141,6 +132,7 @@ class DataPath:
         assert data_memory_size > 0, "Data_memory size should be non-zero"
         self.data_memory_size = data_memory_size
         self.data_memory = [0] * data_memory_size
+        self.return_stack = []
         self.stack = []
         # TODO: сделать огр на размер стека
         self.data_address = 0
@@ -182,26 +174,28 @@ class DataPath:
             word = self.data_memory[self.data_address]
             self.stack.append(word[3] << 0 | word[2] << 8 | word[1] << 16 | word[0] << 24)
         elif first_part and second_part and third_part:  # 1 1 1 COM_MEM->TOP
-            print("мяу")
             word = comm_value
             self.stack.append(word[3] << 0 | word[2] << 8 | word[1] << 16 | word[0] << 24)
+        elif first_part and not second_part and third_part:  # 1 0 1 R_STAK.POP->TOP
+            self.stack.append(self.return_stack_pop())
+
+    def stack_dup(self):
+        self.stack.append(self.stack[-1])
+
+    def stack_over(self):
+        top = self.stack.pop()
+        second = self.stack.pop()
+        self.stack.append(top)
+        self.stack.append(second)
 
     def return_stack_pop(self):
         return self.return_stack.pop()
 
-    def return_stack_push(self, first_part, second_part, third_part, comm_value=0):
-        if first_part and second_part:  # 1 1 0 A->TOP
-            self.stack_push(self.register_a)
-        elif first_part and not second_part:  # 1 0 0 B->TOP
-            self.stack_push(self.register_b)
-        elif not first_part and second_part:  # 0 1 0 ALU->TOP
-            self.stack_push(self.ALU.alu_output)
-        elif not first_part and not second_part:  # 0 0 0 MEM->TOP
-            word = self.data_memory[self.data_address]
-            self.stack_push(word[3] << 0 | word[2] << 8 | word[1] << 16 | word[0] << 24)
-        elif first_part and second_part and third_part:  # 1 1 1 COM_MEM->TOP
-            word = self.data_memory[self.data_address]
-            self.stack_push(comm_value)
+    def return_stack_push(self, from_PC=False, PC_VAL=0):
+        if not from_PC:
+            self.return_stack.append(self.stack.pop())
+            return
+        self.return_stack.append(PC_VAL)
 
     "Т.к. на входах в АЛУ у меня MUX, то и сигналы, собственно, должны поступать"
 
@@ -377,6 +371,24 @@ class ControlUnit:
             self.tick()
             return
 
+        if opcode is Opcode.DROP:
+            self.data_path.stack_pop()
+            self.signal_latch_program_counter(False, False)
+            self.tick()
+            return
+
+        if opcode is Opcode.DUP:
+            self.data_path.stack_dup()
+            self.signal_latch_program_counter(False, False)
+            self.tick()
+            return
+
+        if opcode is Opcode.OVER:
+            self.data_path.stack_over()
+            self.signal_latch_program_counter(False, False)
+            self.tick()
+            return
+
         if opcode is Opcode.INV:
             if self.step == 0:
                 self.data_path.signal_set_left_ALU(True)
@@ -441,6 +453,37 @@ class ControlUnit:
                 self.tick()
                 return
 
+        if opcode is Opcode.LSHIFT:
+            if self.step == 0:
+                self.data_path.signal_set_left_ALU(True)
+                self.data_path.ALU.bite_lshift()
+                self.step += 1
+                self.tick()
+                return
+            if self.step == 1:
+                self.data_path.stack_push(
+                    False, True, False
+                )
+                self.step = 0
+                self.signal_latch_program_counter(False, False)
+                self.tick()
+                return
+        if opcode is Opcode.RSHIFT:
+            if self.step == 0:
+                self.data_path.signal_set_left_ALU(True)
+                self.data_path.ALU.bite_rshift()
+                self.step += 1
+                self.tick()
+                return
+            if self.step == 1:
+                self.data_path.stack_push(
+                    False, True, False
+                )
+                self.step = 0
+                self.signal_latch_program_counter(False, False)
+                self.tick()
+                return
+
         if opcode is Opcode.ADD:
             if self.step == 0:
                 self.data_path.ALU.signal_set_left(self.data_path.stack.pop())
@@ -458,9 +501,22 @@ class ControlUnit:
                 self.tick()
                 return
 
+        if opcode is Opcode.RINTOT:
+            self.data_path.stack_push(True, False, True)
+            self.signal_latch_program_counter(False, False)
+            self.tick()
+            return
+
+        if opcode is Opcode.TINTOR:
+            self.data_path.return_stack_push(False)
+            self.signal_latch_program_counter(False, False)
+            self.tick()
+            return
+
     def debug_print(self, instruction, arg):
         top = 0
         second = 0
+        r_top = 0
         int_atg = arg[3] << 0 | arg[2] << 8 | arg[1] << 16 | arg[0] << 24
         try:
             top = self.data_path.stack[-1]
@@ -470,9 +526,13 @@ class ControlUnit:
             second = self.data_path.stack[-2]
         except IndexError:
             pass
+        try:
+            r_top = self.data_path.return_stack[-1]
+        except IndexError:
+            pass
         print(
             f"Program counter: {self.program_counter}, reg_A: {self.data_path.register_a}, reg_B {self.data_path.register_b}\n"
-            f"Stack top: {top}, stack second: {second}\n"
+            f"Stack top: {top}, stack second: {second} r_stack top : { r_top}\n"
             f"Current tick: {self.current_tick() + 1}, current step = {self.step}, {not self.step}\n"
             f"Current command: {instruction.__str__()}, current agument = {int_atg}\n"
             f"<address> - <HEXCODE> - <mnemonic>\n"
@@ -485,12 +545,12 @@ def run_cpu():
     DP = DataPath(64, alu)
     CU = ControlUnit(64, DP)
 
-    CU.command_memory[0] = 0x6    # LIT
+    CU.command_memory[0] = 0x6  # LIT
     CU.command_memory[1] = 0x00
     CU.command_memory[2] = 0x00
     CU.command_memory[3] = 0x00
     CU.command_memory[4] = 0x0A
-    CU.command_memory[5] = 0x6    # LIT
+    CU.command_memory[5] = 0x6  # LIT
     CU.command_memory[6] = 0x00
     CU.command_memory[7] = 0x00
     CU.command_memory[8] = 0x00
@@ -500,13 +560,17 @@ def run_cpu():
     CU.command_memory[12] = 0x07  # TOA
     CU.command_memory[13] = 0x09  # TOSTACKFROMA
     CU.command_memory[14] = 0x12  # INV
-    CU.command_memory[15] = 0x6   # LIT
+    CU.command_memory[15] = 0x6  # LIT
     CU.command_memory[16] = 0xFF
     CU.command_memory[17] = 0xFF
     CU.command_memory[18] = 0xFF
     CU.command_memory[19] = 0xFF
-    CU.command_memory[20] = 0x15  #OR
-    CU.command_memory[21] = 0xFF  # HALT
+    CU.command_memory[20] = 0x13  # OR
+    CU.command_memory[21] = 0x10  # LSHIFT
+    CU.command_memory[22] = 0x17
+    CU.command_memory[23] = 0x1E
+    CU.command_memory[24] = 0x1D
+    CU.command_memory[25] = 0xFF  # HALT
     try:
         while CU.current_tick() < 100:
             CU.process_next_tick()
