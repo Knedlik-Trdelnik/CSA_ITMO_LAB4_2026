@@ -10,30 +10,31 @@
 
 - и набор вспомогательных функций: `simulation`, `main`.
 """
+from atexit import register
+from typing import reveal_type
 
 from isa import Opcode, opcode_to_binary, binary_to_opcode
 
 
 class ALU:
+    alu_output = None
+
     right = None
     "Правый вход в АЛУ"
 
     left = None
     "Левый вход в АЛУ"
 
-    "Т.к. на входах в АЛУ у меня MUX, то и сигналы, собственно, должны поступать"
-
-    def signal_latch_left(self, value):
-        self.left = value
-
-    def signal_latch_right(self, value):
-        self.right = value
+    def __init__(self):
+        alu_output = 0
+        right = 0
+        left = 0
 
     def add(self):
-        return self.right + self.left
+        self.alu_output = self.left + self.right
 
     def sub(self):
-        return self.right - self.left
+        self.alu_output = self.left - self.right
 
     def mul_step(self):
         pass
@@ -42,13 +43,22 @@ class ALU:
         pass
 
     def inc_left(self):
-        pass
+        self.alu_output = self.left + 1
 
-    def inc_right(self):
-        return self.right + 1
+    def dec_left(self):
+        self.alu_output = self.left - 1
 
-    def inc_left(self):
-        return self.left - 1
+    def bite_and(self):
+        self.alu_output = self.left & self.right
+
+    def bite_or(self):
+        self.alu_output = self.left | self.right
+
+    def bite_Xor(self):
+        self.alu_output = self.left ^ self.right
+
+    def bite_inv(self):
+        self.alu_output = ~self.left
 
 
 class DataPath:
@@ -119,45 +129,93 @@ class DataPath:
     data_memory = None
     "Память данных. Инициализируется нулевыми значениями."
 
-    data_address = None
-    "Адрес в памяти данных. Инициализируется нулём."
-
     register_a = None
     "Регистр А. Инициализируется нулём."
 
     register_b = None
     "Регистр В. Инициализируется нулём."
 
-    def __init__(self, data_memory_size):
+    ALU = None
+
+    def __init__(self, data_memory_size, ALU):
         assert data_memory_size > 0, "Data_memory size should be non-zero"
         self.data_memory_size = data_memory_size
         self.data_memory = [0] * data_memory_size
         self.stack = []
-        #TODO: сделать огр на размер стека
+        # TODO: сделать огр на размер стека
         self.data_address = 0
         self.register_a = 0
         self.register_b = 0
+        self.ALU = ALU
 
-    def signal_latch_a(self, value):
-        self.register_a = value
+    def signal_set_a(self, stack_or_ALU):
+        if stack_or_ALU == True:
+            self.register_a = self.stack.pop()
+        else:
+            self.register_a = self.ALU.alu_output
 
-    def signal_latch_b(self, value):
-        self.register_b = value
+    def signal_set_b(self, stack_or_ALU):
+        if stack_or_ALU == True:
+            self.register_b = self.stack.pop()
+        else:
+            self.register_b = self.ALU.alu_output
 
     def signal_latch_AR(self, value):
         self.address_memory = value
 
+    def read_from_memory(self):
+        return self.data_memory[self.data_address]
+
     def stack_pop(self):
         return self.stack.pop()
 
-    def stack_push(self, value):
-        return self.stack.append(value)
+    def stack_push(self, first_part, second_part, third_part, comm_value=[0, 0, 0, 0]):
+        if first_part and second_part and not third_part:  # 1 1 0 A->TOP
+            self.stack.append(self.register_a)
+            self.register_a = 0
+        elif first_part and not second_part and not third_part:  # 1 0 0 B->TOP
+            self.stack.append(self.register_b)
+            self.register_b = 0
+        elif not first_part and second_part and not third_part:  # 0 1 0 ALU->TOP
+            self.stack.append(self.ALU.alu_output)
+        elif not first_part and not second_part and not third_part:  # 0 0 0 MEM->TOP
+            word = self.data_memory[self.data_address]
+            self.stack.append(word[3] << 0 | word[2] << 8 | word[1] << 16 | word[0] << 24)
+        elif first_part and second_part and third_part:  # 1 1 1 COM_MEM->TOP
+            print("мяу")
+            word = comm_value
+            self.stack.append(word[3] << 0 | word[2] << 8 | word[1] << 16 | word[0] << 24)
 
     def return_stack_pop(self):
         return self.return_stack.pop()
 
-    def return_stack_push(self, value):
-        return self.return_stack.push(value)
+    def return_stack_push(self, first_part, second_part, third_part, comm_value=0):
+        if first_part and second_part:  # 1 1 0 A->TOP
+            self.stack_push(self.register_a)
+        elif first_part and not second_part:  # 1 0 0 B->TOP
+            self.stack_push(self.register_b)
+        elif not first_part and second_part:  # 0 1 0 ALU->TOP
+            self.stack_push(self.ALU.alu_output)
+        elif not first_part and not second_part:  # 0 0 0 MEM->TOP
+            word = self.data_memory[self.data_address]
+            self.stack_push(word[3] << 0 | word[2] << 8 | word[1] << 16 | word[0] << 24)
+        elif first_part and second_part and third_part:  # 1 1 1 COM_MEM->TOP
+            word = self.data_memory[self.data_address]
+            self.stack_push(comm_value)
+
+    "Т.к. на входах в АЛУ у меня MUX, то и сигналы, собственно, должны поступать"
+
+    def signal_set_left_ALU(self, is_stack):
+        if is_stack:
+            self.ALU.left = self.stack_pop()
+        else:
+            self.ALU.left = self.register_a
+
+    def signal_set_right_ALU(self, is_stack):
+        if is_stack:
+            self.ALU.right = self.stack_pop()
+        else:
+            self.ALU.right = self.register_b
 
 
 class ControlUnit:
@@ -176,6 +234,9 @@ class ControlUnit:
     _tick = None
     "Текущее модельное время процессора (в тактах). Инициализируется нулём."
 
+    step = None
+    "Шаг выполнения инструкции"
+
     def __init__(self, command_memory_size, data_path):
         self.command_memory_size = command_memory_size
         self.command_memory = [0] * command_memory_size
@@ -192,18 +253,22 @@ class ControlUnit:
         """Текущее модельное время процессора (в тактах)."""
         return self._tick
 
-    def signal_latch_program_counter(self):
+    def signal_latch_program_counter(self, first_part, second_part):
         """Защёлкнуть новое значение счётчика команд.
-
-        Если `sel_next` равен `True`, то счётчик будет увеличен на единицу,
-        иначе -- будет установлен в значение аргумента текущей инструкции.
+        На входе в MUX 4 значения - для выбора нужно два параметра
         """
         "Пока что у меня фиксированная длина"
-
-        self.program_counter += 5
-
+        if first_part and second_part:  # 1 1
+            self.program_counter = self.data_path.return_stack_pop()
+        elif first_part and not second_part:  # 1 0
+            self.program_counter = self.data_path.return_stack_pop()  # TODO: изменить на аргумент инструкции для if
+        elif not first_part and second_part:  # 0 1
+            self.program_counter += 5
+        elif not first_part and not second_part:  # 0 0
+            self.program_counter += 1
 
     def process_next_tick(self):  # noqa: C901 # код имеет хорошо структурирован, по этому не проблема.
+
         """Основной цикл процессора. Декодирует и выполняет инструкцию.
 
         Обработка инструкции:
@@ -225,94 +290,228 @@ class ControlUnit:
 
         argue = self.command_memory[self.program_counter + 0x1:self.program_counter + 0x5]
 
-        self.signal_latch_program_counter()
-        "Одновременно с чтением защелкиваем"
-
         opcode = binary_to_opcode[instr]
+        self.debug_print(opcode, argue)
+
         if opcode is Opcode.HALT:
-            self.debug_print()
             raise StopIteration()
 
         if opcode is Opcode.LIT:
             value = argue[3] << 0 | argue[2] << 8 | argue[1] << 16 | argue[0] << 24
             "А у меня все в Big-endian"
-            self.data_path.stack_push(value)
-            self.tick()
-
-            return
-        "ОСТАЛЬНОЕ НЕ ГОТОВО!"
-        if opcode is Opcode.JZ:
-            if self.step == 0:
-                addr = instr["arg"]
-                self.data_path.signal_latch_acc()
-                self.step = 1
-                self.tick()
-                return
-            if self.step == 1:
-                if self.data_path.zero():
-                    self.signal_latch_program_counter(sel_next=False)
-                else:
-                    self.signal_latch_program_counter(sel_next=True)
-                self.step = 0
-                self.tick()
-                return
-
-        if opcode in {Opcode.RIGHT, Opcode.LEFT}:
-            self.data_path.signal_latch_data_addr(opcode.value)
-            self.signal_latch_program_counter(sel_next=True)
-            self.step = 0
+            self.data_path.stack_push(True, True, True, argue)
+            self.signal_latch_program_counter(False, True)
+            "По - хорошему, одновременно с чтением защелкиваем PC...но ладно"
             self.tick()
             return
 
-        if opcode in {Opcode.INC, Opcode.DEC, Opcode.INPUT}:
+        if opcode is Opcode.INC:
             if self.step == 0:
-                self.data_path.signal_latch_acc()
-                self.step = 1
+                self.data_path.signal_set_left_ALU(True)
+                self.data_path.ALU.inc_left()
+                self.step += 1
                 self.tick()
                 return
             if self.step == 1:
-                self.data_path.signal_wr(opcode.value)
-                self.signal_latch_program_counter(sel_next=True)
+                self.data_path.stack_push(
+                    False, True, False
+                )
                 self.step = 0
+                self.signal_latch_program_counter(False, False)
                 self.tick()
                 return
 
-        if opcode is Opcode.PRINT:
+        if opcode is Opcode.DEC:
             if self.step == 0:
-                self.data_path.signal_latch_acc()
-                self.step = 1
+                self.data_path.signal_set_left_ALU(True)
+                self.step += 1
                 self.tick()
                 return
             if self.step == 1:
-                self.data_path.signal_output()
-                self.signal_latch_program_counter(sel_next=True)
+                self.data_path.stack_push(
+                    False, True, False
+                )
                 self.step = 0
+                self.signal_latch_program_counter(False, False)
                 self.tick()
                 return
 
-    def debug_print(self):
-        print(f"Program counter: {self.program_counter}, reg_A: {self.data_path.register_a}, reg_B {self.data_path.register_b}\n"
-              f"Stack top: {self.data_path.stack[-1]}, stack second: {self.data_path.stack[-2]}\n")
+        if opcode is Opcode.SUB:
+            if self.step == 0:
+                self.data_path.signal_set_left_ALU(True)
+                self.data_path.signal_set_right_ALU(True)
+                self.data_path.ALU.sub()
+                self.step += 1
+                self.tick()
+                return
+            if self.step == 1:
+                self.data_path.stack_push(
+                    False, True, False
+                )
+                self.step = 0
+                self.signal_latch_program_counter(False, False)
+                self.tick()
+                return
+
+        if opcode is Opcode.TOA:
+            self.data_path.signal_set_a(True)
+            self.signal_latch_program_counter(False, False)
+            self.tick()
+            return
+
+        if opcode is Opcode.TOB:
+            self.data_path.signal_set_b(True)
+            self.signal_latch_program_counter(False, False)
+            self.tick()
+            return
+
+        if opcode is Opcode.TOSTACKFROMA:
+            self.data_path.stack_push(True, True, False)
+            self.signal_latch_program_counter(False, False)
+            self.tick()
+            return
+
+        if opcode is Opcode.TOSTACKFROMB:
+            self.data_path.stack_push(True, True, False)
+            self.signal_latch_program_counter(False, False)
+            self.tick()
+            return
+
+        if opcode is Opcode.INV:
+            if self.step == 0:
+                self.data_path.signal_set_left_ALU(True)
+                self.data_path.ALU.bite_inv()
+                self.step += 1
+                self.tick()
+                return
+            if self.step == 1:
+                self.data_path.stack_push(
+                    False, True, False
+                )
+                self.step = 0
+                self.signal_latch_program_counter(False, False)
+                self.tick()
+                return
+        if opcode is Opcode.AND:
+            if self.step == 0:
+                self.data_path.signal_set_left_ALU(True)
+                self.data_path.signal_set_right_ALU(True)
+                self.data_path.ALU.bite_and()
+                self.step += 1
+                self.tick()
+                return
+            if self.step == 1:
+                self.data_path.stack_push(
+                    False, True, False
+                )
+                self.step = 0
+                self.signal_latch_program_counter(False, False)
+                self.tick()
+                return
+        if opcode is Opcode.XOR:
+            if self.step == 0:
+                self.data_path.signal_set_left_ALU(True)
+                self.data_path.signal_set_right_ALU(True)
+                self.data_path.ALU.bite_Xor()
+                self.step += 1
+                self.tick()
+                return
+            if self.step == 1:
+                self.data_path.stack_push(
+                    False, True, False
+                )
+                self.step = 0
+                self.signal_latch_program_counter(False, False)
+                self.tick()
+                return
+        if opcode is Opcode.OR:
+            if self.step == 0:
+                self.data_path.signal_set_left_ALU(True)
+                self.data_path.signal_set_right_ALU(True)
+                self.data_path.ALU.bite_or()
+                self.step += 1
+                self.tick()
+                return
+            if self.step == 1:
+                self.data_path.stack_push(
+                    False, True, False
+                )
+                self.step = 0
+                self.signal_latch_program_counter(False, False)
+                self.tick()
+                return
+
+        if opcode is Opcode.ADD:
+            if self.step == 0:
+                self.data_path.ALU.signal_set_left(self.data_path.stack.pop())
+                self.data_path.ALU.signal_set_right(self.data_path.stack.pop())
+                self.data_path.ALU.add()
+                self.step += 1
+                self.tick()
+                return
+            if self.step == 1:
+                self.data_path.stack_push(
+                    self.data_path.ALU.alu_output
+                )
+                self.step = 0
+                self.signal_latch_program_counter(False, False)
+                self.tick()
+                return
+
+    def debug_print(self, instruction, arg):
+        top = 0
+        second = 0
+        int_atg = arg[3] << 0 | arg[2] << 8 | arg[1] << 16 | arg[0] << 24
+        try:
+            top = self.data_path.stack[-1]
+        except IndexError:
+            pass
+        try:
+            second = self.data_path.stack[-2]
+        except IndexError:
+            pass
+        print(
+            f"Program counter: {self.program_counter}, reg_A: {self.data_path.register_a}, reg_B {self.data_path.register_b}\n"
+            f"Stack top: {top}, stack second: {second}\n"
+            f"Current tick: {self.current_tick() + 1}, current step = {self.step}, {not self.step}\n"
+            f"Current command: {instruction.__str__()}, current agument = {int_atg}\n"
+            f"<address> - <HEXCODE> - <mnemonic>\n"
+            f"{self.program_counter} - {(opcode_to_binary.get(instruction)):02x}{(int_atg):08x} - <mnemonic>\n"
+            f"----------Состояние регистров и памяти на начало такта!----------\n")
 
 
 def run_cpu():
     alu = ALU()
-    DP = DataPath(64)
+    DP = DataPath(64, alu)
     CU = ControlUnit(64, DP)
 
-    CU.command_memory[0] = 0x4
+    CU.command_memory[0] = 0x6    # LIT
     CU.command_memory[1] = 0x00
     CU.command_memory[2] = 0x00
     CU.command_memory[3] = 0x00
     CU.command_memory[4] = 0x0A
-    CU.command_memory[5] = 0x4
+    CU.command_memory[5] = 0x6    # LIT
     CU.command_memory[6] = 0x00
     CU.command_memory[7] = 0x00
     CU.command_memory[8] = 0x00
     CU.command_memory[9] = 0x04
-    CU.command_memory[10] = 0xFF
-    while CU.current_tick() < 100:
-        CU.process_next_tick()
+    CU.command_memory[10] = 0x02  # SUB
+    CU.command_memory[11] = 0x00  # INC
+    CU.command_memory[12] = 0x07  # TOA
+    CU.command_memory[13] = 0x09  # TOSTACKFROMA
+    CU.command_memory[14] = 0x12  # INV
+    CU.command_memory[15] = 0x6   # LIT
+    CU.command_memory[16] = 0xFF
+    CU.command_memory[17] = 0xFF
+    CU.command_memory[18] = 0xFF
+    CU.command_memory[19] = 0xFF
+    CU.command_memory[20] = 0x15  #OR
+    CU.command_memory[21] = 0xFF  # HALT
+    try:
+        while CU.current_tick() < 100:
+            CU.process_next_tick()
+    except StopIteration:
+        print("Усе")
 
 
 if __name__ == "__main__":
