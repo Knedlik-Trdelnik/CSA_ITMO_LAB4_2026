@@ -8,8 +8,9 @@ from enum import Enum
    │  опкод  │                     аргумент                                │
    └─────────┴─────────────────────────────────────────────────────────────┘
    """
-class Opcode(str, Enum):
 
+
+class Opcode(str, Enum):
     INC = "increment"
     DEC = "decrement"
     SUB = "sub"
@@ -27,6 +28,7 @@ class Opcode(str, Enum):
     BLOAD = "b_load"
     ALOAD = "a_load"
     LOAD = "load"
+    STORE = "store"
 
     LSHIFT = "lshift"
     RSHIFT = "rshift"
@@ -51,7 +53,6 @@ class Opcode(str, Enum):
 
     HALT = "halt"
 
-
     def __str__(self):
         """Переопределение стандартного поведения `__str__` для `Enum`: вместо
         `Opcode.INC` вернуть `increment`.
@@ -67,16 +68,17 @@ opcode_to_binary = {
     Opcode.MUL: 0x04,  # TODO: :З :З :З :З :З :З :З :З :З :З :З :З :З :З
     Opcode.DIV: 0x05,  #
 
-    Opcode.LIT: 0x06,  #   +
-    Opcode.TOA: 0x07,  #   +
-    Opcode.TOB: 0x08,  #   +
+    Opcode.LIT: 0x06,  # +
+    Opcode.TOA: 0x07,  # +
+    Opcode.TOB: 0x08,  # +
     Opcode.TOSTACKFROMA: 0x09,  # +
     Opcode.TOSTACKFROMB: 0x0A,  # + TODO: вырезать
     Opcode.BSTORE: 0x0B,  #
     Opcode.ASTORE: 0x0C,  #
-    Opcode.BLOAD:  0x0D,  #
-    Opcode.ALOAD:  0x0E,  #
-    Opcode.LOAD:   0x0F,  #
+    Opcode.BLOAD: 0x0D,  #
+    Opcode.ALOAD: 0x0E,  #
+    Opcode.LOAD: 0x0F,
+    Opcode.STORE: 0x1F,  #
 
     Opcode.LSHIFT: 0x10,  # +
     Opcode.RSHIFT: 0x11,  # +
@@ -84,19 +86,19 @@ opcode_to_binary = {
     Opcode.INV: 0x12,  # +
     Opcode.AND: 0x13,  # +
     Opcode.XOR: 0x14,  # +
-    Opcode.OR: 0x15,   # +
+    Opcode.OR: 0x15,  # +
 
     Opcode.DROP: 0x16,  # +
-    Opcode.DUP:  0x17,  # +
+    Opcode.DUP: 0x17,  # +
     Opcode.OVER: 0x18,  # +
 
     Opcode.CALL: 0x19,  #
-    Opcode.RET:  0x1A,  #
-    Opcode.IF:   0x1B,  #
-    Opcode.MIF:  0x1C,  #
+    Opcode.RET: 0x1A,  #
+    Opcode.IF: 0x1B,  #
+    Opcode.MIF: 0x1C,  #
 
-    Opcode.RINTOT: 0x1D,# +
-    Opcode.TINTOR: 0x1E,# +
+    Opcode.RINTOT: 0x1D,  # +
+    Opcode.TINTOR: 0x1E,  # +
 
     Opcode.HALT: 0xFF,  # +
 }
@@ -119,6 +121,7 @@ binary_to_opcode = {
     0x0D: Opcode.BLOAD,
     0x0E: Opcode.ALOAD,
     0x0F: Opcode.LOAD,
+    0x1F: Opcode.STORE,  #
 
     0x10: Opcode.LSHIFT,
     0x11: Opcode.RSHIFT,
@@ -158,6 +161,7 @@ opcode_to_mnemonic = {
     Opcode.HALT: 0xFF,
 }
 
+
 def to_bytes(code):
     pass
 
@@ -168,5 +172,3 @@ def to_hex(code):
 
 def from_bytes(binary_code):
     pass
-
-

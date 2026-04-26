@@ -1,6 +1,7 @@
 import sys
 from abc import ABC, abstractmethod
-
+from typing import final
+from isa import Opcode, opcode_to_binary, binary_to_opcode
 
 class Expression(ABC):
     @abstractmethod
@@ -61,8 +62,92 @@ class Eq(Expression):
         return (self.left.interpret() % self.right.interpret())
 
 
+class Statement(ABC):
+
+    def __init__(self):
+        self.statement_list = []
+    @abstractmethod
+    def execute(self):
+        pass
+
+
+class Program(Statement):
+    def execute(self):
+        for _ in self.statement_list:
+            _.execute()
+
+class Entry_Point(Statement):
+    def execute(self):
+        for _ in self.statement_list:
+            _.execute()
+
+class Variable_Declaration(Statement):
+    type = "цело"
+    name = "variable"
+    value: Expression = None
+
+    def execute(self):
+        global memory_pos
+        global dict
+        global output2st
+        global data_memory
+        if self.name in dict.keys():
+            raise KeyError(f"ашипка: переменная {self.name} уже определена")
+        else:
+            output2st += f"{memory_pos}-{memory_pos+4} - 0x{(opcode_to_binary[Opcode.LIT]):02x}{self.value.interpret():08x} - lit: stack.push({self.value.interpret()}))\n"
+
+            output2st += f"{memory_pos+5}-{memory_pos+5+4} - 0x{(opcode_to_binary[Opcode.LOAD]):02x}{self.value.interpret():08x} - store: mem[{data_memory}] <- stack.pop()\n"
+
+            dict[self.name] = memory_pos
+            if self.type == "цело":
+                data_memory +=1
+                memory_pos += 4
+                memory_pos += 5
+            elif self.type == "долгоцело":
+                data_memory += 2
+                memory_pos += 8
+                memory_pos += 5
+
+
+
+
+class Assignment(Statement):
+    def execute(self):
+        pass
+
+class Output(Statement):
+    def execute(self):
+        pass
+
 math_op = {"*", "+", "-", ":", "%"}
 high_op = {"*", ":", "%"}
+
+
+def check_next_highest_op(tokens):
+    first_index = 0
+    second_index = -1
+    cnt = 1
+    try:
+        first_index = tokens.index("(")
+    except:
+        return
+    for i in range(first_index + 1, len(tokens)):  # + 1, так как первую ( нам не нужно смотреть
+        if cnt == 0:
+            break
+        if cnt < 0:
+            print("fsdfsfd")
+            raise KeyError("Неправильная последовательность скобок")
+
+        if tokens[i] == ")":
+            cnt -= 1
+            if cnt == 0:
+                second_index = i
+        if tokens[i] == "(":
+            cnt += 1
+
+    if second_index == -1:
+        raise KeyError("Неправильная последовательность скобок")
+    return first_index, second_index
 
 
 def check_next_hight_op(tokens):
@@ -109,16 +194,35 @@ def check_next_low_op(tokens):
         return 0
 
 
-def parse_epression(expression):
-    line = "1 + 3 * 2 - 2 + 3 * 4"
-    "line = 1 + 3 * 2 * 2 : 3"
-    tokens = line.split()
+def parse_epression(expression, isRecursion=False):
+    '''
 
-    tokens_pos = 0
+    :param expression: ожидается вход: массив токенов
+    :return: выражение, котоое можно вычеслить
+    '''
+    "1 + 3 * 2 * 2 : 3"
+    tokens = []
+    if not isRecursion:
+        tokens = expression.replace(" ", "")
+        tokens = tokens.split(" ")
+    else:
+        tokens = expression
     print(tokens)
     '''
     найдем сначала все умножения/деления и превратим в объекты
+    но, конечно, сначала все внутри ( )
     '''
+    while check_next_highest_op(tokens):
+        first_index, second_index = check_next_highest_op(tokens)
+        subtokens = tokens[first_index + 1:second_index]  # если у меня ( 1 + 3 ) то я отправлю парситься 1 + 3
+
+        print(subtokens)
+        print(tokens)
+        print(first_index, second_index)
+        subexspression = parse_epression(subtokens, True)
+        tokens[
+            first_index:second_index + 1] = " "  # особенности языка)))  must assign iterable to extended slice.Дескать, с обоих сторон нужен итерируемый объект, но заглушку я заменю объектом
+        tokens[first_index] = subexspression
 
     while check_next_hight_op(tokens):
         i = check_next_hight_op(tokens)
@@ -174,11 +278,18 @@ def parse_epression(expression):
         tokens[i] = (epx)
         tokens.pop(i - 1)
         tokens.pop(i)  # правый элемент на i+1 , но я уже 1 удалил, так что i+1-1=1
-
+    #костыль, если приходит одно число
+    for _ in range(len(tokens)):
+        if not isinstance(tokens[_], Expression):
+            tokens[_] = parse_token(tokens[_])
+    '''
     print(tokens)
     print(tokens[0].left)
     print(tokens[0].right)
     print(tokens[0].interpret())
+    '''
+    final_expression = tokens[0]
+    return final_expression  # в конечном итоге останется 1 операция
 
 
 def parse_token(token, tokens=[], index=0):
@@ -201,32 +312,73 @@ def parse_token(token, tokens=[], index=0):
                 return Eq()
     elif token not in math_op:
         return Number(int(token))
+data_memory = 0 #на дата-мемори указатель
+memory_pos = 0 #указатель
+dict = dict()  # пространство имен переменных \\где какая переменнная лежит
+output1st = "----------data_memory----------\n"
+output2st = "---------command_memory---------\n<address> - <HEXCODE> - <mnemonic>\n"
+def translate(file):
+    global output1st
+    global output2st
+    program = Program()
+    main = None
+
+    read_main = False
+    read_fucns = False
+    for line in file:
+        print(line.strip())
+        try:
+            index_of_end = line.index(";")
+        except ValueError:
+            raise KeyError(f"|||{line}||| - нет ; на конце")
+        tokens = line[:index_of_end].split(" ")
+        if tokens[0] == "main":
+            read_main = True
+            main = Entry_Point()
+            program.statement_list.append(main)
+        elif tokens[0] == "main-end":
+            read_main = False
+        print(tokens)
+
+        '''
+        Начинается намазюк
+        '''
+        if read_main:
+            if tokens[0] in {"цело", "долгоцело", "грамота"}:
+                st = Variable_Declaration()
+                st.type = tokens[0]
+                st.name = tokens[1]
+                st.value = parse_epression(tokens[3::],True)
+                main.statement_list.append(st)
 
 
-def translate():
-    pass
+
+    program.execute()
+    final_output = output1st + output2st
+    return final_output
 
 
-def main(source, target):
+def main(source="input.txt", target="_", test="test.txt"):
     """Функция запуска транслятора. Параметры -- исходный и целевой файлы."""
-    with open(source, encoding="utf-8") as f:
-        source = f.read()
+    f = open(source, encoding="utf-8")
 
-    code = translate(source)
+    code = translate(f)
     # binary_code = to_bytes(code)
     # hex_code = to_hex(code)
+    with open(test, "w", encoding="utf-8") as f:
+        f.write(code)
     '''
-    with open(target, "wb") as f:
-        f.write(binary_code)
+    
     with open(target + ".hex", "w") as f:
         f.write(hex_code)
     '''
-    print("source LoC:", len(source.split("\n")), "code instr:", len(code))
+    # print("source LoC:", len(source.split("\n")), "code instr:", len(code))
 
 
 if __name__ == "__main__":
-    parse_epression("23123123")
-
+    # parse_epression("((1+3)*2)*(2-1)")
+    '''
     assert len(sys.argv) == 3, "Wrong arguments: translator_asm.py <input_file> <target_file>"
     _, source, target = sys.argv
-    main(source, target)
+    '''
+    main()
