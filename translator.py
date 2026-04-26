@@ -65,10 +65,53 @@ math_op = {"*", "+", "-", ":", "%"}
 high_op = {"*", ":", "%"}
 
 
-def parse_epression(expression):
+def check_next_hight_op(tokens):
+    mul_index = 0
+    div_index = 0
+    eq_index = 0
+    try:
+        mul_index = tokens.index("*")
+    except:
+        pass
+    try:
+        div_index = tokens.index(":")
+    except:
+        pass
+    try:
+        eq_index = tokens.index("%")
+    except:
+        pass
+    a = [mul_index, div_index, eq_index]
+    b = [x for x in a if x != 0]
+    try:
+        return min(b)
+    except:
+        return 0
 
-    line = "1 + 3 * 2"
-    "line = 3 * 2 + 1"
+
+def check_next_low_op(tokens):
+    sub_index = 0
+    add_index = 0
+
+    try:
+        sub_index = tokens.index("-")
+    except:
+        pass
+    try:
+        add_index = tokens.index("+")
+    except:
+        pass
+    a = [sub_index, add_index]
+    b = [x for x in a if x != 0]
+    try:
+        return min(b)
+    except:
+        return 0
+
+
+def parse_epression(expression):
+    line = "1 + 3 * 2 - 2 + 3 * 4"
+    "line = 1 + 3 * 2 * 2 : 3"
     tokens = line.split()
 
     tokens_pos = 0
@@ -76,131 +119,61 @@ def parse_epression(expression):
     '''
     найдем сначала все умножения/деления и превратим в объекты
     '''
-    try:
-        while tokens.index("*"):
-            print(tokens)
-            i = tokens.index("*")
-            #print(i)
-            token = tokens[i]
-            left_token = None
-            right_token = None
-            epx = None
-            if i != 0:
-                left_token = tokens[i - 1]
-            if i != len(tokens) - 1:
-                right_token = tokens[i + 1]
+
+    while check_next_hight_op(tokens):
+        i = check_next_hight_op(tokens)
+        print(tokens)
+        # print(i)
+        token = tokens[i]
+        left_token = None
+        right_token = None
+        epx = None
+        if i != 0:
+            left_token = tokens[i - 1]
+        if i != len(tokens) - 1:
+            right_token = tokens[i + 1]
+        if token == "*":
             epx = Mul()
-            if left_token is not Expression and not None:
-                left_token = parse_token(left_token)
-            if right_token is not Expression and not None:
-                right_token = parse_token(right_token)
-            epx.left = left_token
-            epx.right = right_token
-            tokens[i]=(epx)
-            tokens.pop(i - 1)
-            tokens.pop(i ) # правый элемент на i+1 , но я уже 1 удалил, так что i+1-1=1
-    except ValueError:
-        pass
-    try:
-        while tokens.index(":"):
-            print(tokens)
-            i = tokens.index(":")
-            # print(i)
-            token = tokens[i]
-            left_token = None
-            right_token = None
-            epx = None
-            if i != 0:
-                left_token = tokens[i - 1]
-            if i != len(tokens) - 1:
-                right_token = tokens[i + 1]
+        elif token == ":":
             epx = Div()
-            if left_token is not Expression and not None:
-                left_token = parse_token(left_token)
-            if right_token is not Expression and not None:
-                right_token = parse_token(right_token)
-            epx.left = left_token
-            epx.right = right_token
-            tokens[i] = (epx)
-            tokens.pop(i - 1)
-            tokens.pop(i)  # правый элемент на i+1 , но я уже 1 удалил, так что i+1-1=1
-    except ValueError:
-        pass
-    try:
-        while tokens.index("+"):
-            print(tokens)
-            i = tokens.index("+")
-            # print(i)
-            token = tokens[i]
-            left_token = None
-            right_token = None
-            epx = None
-            if i != 0:
-                left_token = tokens[i - 1]
-            if i != len(tokens) - 1:
-                right_token = tokens[i + 1]
-            epx = Add()
-            if left_token is not Expression and not None:
-                left_token = parse_token(left_token)
-            if right_token is not Expression and not None:
-                right_token = parse_token(right_token)
-            epx.left = left_token
-            epx.right = right_token
-            tokens[i] = (epx)
-            tokens.pop(i - 1)
-            tokens.pop(i)  # правый элемент на i+1 , но я уже 1 удалил, так что i+1-1=1
-    except ValueError:
-        pass
-    try:
-        while tokens.index("-"):
-            print(tokens)
-            i = tokens.index("-")
-            # print(i)
-            token = tokens[i]
-            left_token = None
-            right_token = None
-            epx = None
-            if i != 0:
-                left_token = tokens[i - 1]
-            if i != len(tokens) - 1:
-                right_token = tokens[i + 1]
-            epx = Sub()
-            if left_token is not Expression and not None:
-                left_token = parse_token(left_token)
-            if right_token is not Expression and not None:
-                right_token = parse_token(right_token)
-            epx.left = left_token
-            epx.right = right_token
-            tokens[i] = (epx)
-            tokens.pop(i - 1)
-            tokens.pop(i)  # правый элемент на i+1 , но я уже 1 удалил, так что i+1-1=1
-    except ValueError:
-        pass
-    try:
-        while tokens.index("%"):
-            print(tokens)
-            i = tokens.index("%")
-            # print(i)
-            token = tokens[i]
-            left_token = None
-            right_token = None
-            epx = None
-            if i != 0:
-                left_token = tokens[i - 1]
-            if i != len(tokens) - 1:
-                right_token = tokens[i + 1]
+        elif token == "%":
             epx = Eq()
-            if left_token is not Expression and not None:
-                left_token = parse_token(left_token)
-            if right_token is not Expression and not None:
-                right_token = parse_token(right_token)
-            epx.left = left_token
-            epx.right = right_token
-            tokens[i] = (epx)
-            tokens.pop(i - 1)
-            tokens.pop(i)  # правый элемент на i+1 , но я уже 1 удалил, так что i+1-1=1
-    except ValueError:
-        pass
+        if left_token is not Expression and not None:
+            left_token = parse_token(left_token)
+        if right_token is not Expression and not None:
+            right_token = parse_token(right_token)
+        epx.left = left_token
+        epx.right = right_token
+        tokens[i] = (epx)
+        tokens.pop(i - 1)
+        tokens.pop(i)  # правый элемент на i+1 , но я уже 1 удалил, так что i+1-1=1
+
+    while check_next_low_op(tokens):
+        i = check_next_low_op(tokens)
+        print(tokens)
+        # print(i)
+        token = tokens[i]
+        left_token = None
+        right_token = None
+        epx = None
+        if i != 0:
+            left_token = tokens[i - 1]
+        if i != len(tokens) - 1:
+            right_token = tokens[i + 1]
+        if token == "-":
+            epx = Sub()
+        elif token == "+":
+            epx = Add()
+
+        if left_token is not Expression and not None:
+            left_token = parse_token(left_token)
+        if right_token is not Expression and not None:
+            right_token = parse_token(right_token)
+        epx.left = left_token
+        epx.right = right_token
+        tokens[i] = (epx)
+        tokens.pop(i - 1)
+        tokens.pop(i)  # правый элемент на i+1 , но я уже 1 удалил, так что i+1-1=1
 
     print(tokens)
     print(tokens[0].left)
@@ -209,7 +182,6 @@ def parse_epression(expression):
 
 
 def parse_token(token, tokens=[], index=0):
-
     if isinstance(token, Expression):
         return token
     if token is None:
