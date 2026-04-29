@@ -3,9 +3,16 @@ from abc import ABC, abstractmethod
 from typing import final
 from isa import Opcode, opcode_to_binary, binary_to_opcode
 
+
 class Expression(ABC):
+    global context
+
     @abstractmethod
     def interpret(self):
+        pass
+
+    @abstractmethod
+    def execute(self):
         pass
 
 
@@ -15,6 +22,26 @@ class Number(Expression):
 
     def interpret(self):
         return self.number
+
+    def execute(self):
+        context.output2st += f"{context.comm_memory_pos}-{context.comm_memory_pos + 4} - 0x{(opcode_to_binary[Opcode.LIT]):02x}{self.number:08x} - lit: stack.push({self.number}))\n"
+        context.inc_comm_memory_pos(5)
+
+
+class Variable(Expression):
+    def __init__(self, name: str):
+        self.name = name
+        print(context.nameSpace.keys())
+
+
+    def interpret(self):
+        if self.name not in context.nameSpace.keys():
+            raise KeyError(f"ашипка: переменная {self.name} не была определена!")
+        return context.nameSpace[self.name]
+
+    def execute(self):
+        context.output2st += f"{context.comm_memory_pos}-{context.comm_memory_pos + 4} - 0x{(opcode_to_binary[Opcode.LOAD]):02x}{context.nameSpace[self.name]:08x} - load: stack.push(mem[{context.nameSpace[self.name]}]))\n"
+        context.inc_comm_memory_pos(5)
 
 
 class Add(Expression):
@@ -62,10 +89,40 @@ class Eq(Expression):
         return (self.left.interpret() % self.right.interpret())
 
 
+class Context:
+    data_memory_pos = 0  # на дата-мемори указатель  ( свободная ячейка) 32 бита
+    comm_memory_pos = 0  # указатель  на дата-мемори( свободная ячейка) 8 бит
+    nameSpace = dict()  # пространство имен переменных \\где какая переменнная лежит\
+    nameValue = dict()  # имитация памяти TODO: а нужна вообще?
+    output1st = "---------data_memory_pos-32-bit---\n"
+    output2st = "---------command_memory---1-bit---\n<address> - <HEXCODE> - <mnemonic>\n"
+
+    def saveLong(self, name, value):
+        self.nameValue[name] = value
+        self.nameSpace[name] = self.data_memory_pos
+        self.data_memory_pos += 2
+
+        pass
+
+    def saveInt(self, name, value):
+        self.nameValue[name] = value
+        self.nameSpace[name] = self.data_memory_pos
+
+        self.data_memory_pos += 1
+
+    def inc_comm_memory_pos(self, comm_bytes):
+        self.comm_memory_pos += comm_bytes
+
+
+context = Context()
+
+
 class Statement(ABC):
+    global context
 
     def __init__(self):
         self.statement_list = []
+
     @abstractmethod
     def execute(self):
         pass
@@ -76,10 +133,12 @@ class Program(Statement):
         for _ in self.statement_list:
             _.execute()
 
+
 class Entry_Point(Statement):
     def execute(self):
         for _ in self.statement_list:
             _.execute()
+
 
 class Variable_Declaration(Statement):
     type = "цело"
@@ -87,37 +146,29 @@ class Variable_Declaration(Statement):
     value: Expression = None
 
     def execute(self):
-        global memory_pos
-        global dict
-        global output2st
-        global data_memory
-        if self.name in dict.keys():
+
+        if self.name in context.nameSpace.keys():
             raise KeyError(f"ашипка: переменная {self.name} уже определена")
         else:
-            output2st += f"{memory_pos}-{memory_pos+4} - 0x{(opcode_to_binary[Opcode.LIT]):02x}{self.value.interpret():08x} - lit: stack.push({self.value.interpret()}))\n"
-
-            output2st += f"{memory_pos+5}-{memory_pos+5+4} - 0x{(opcode_to_binary[Opcode.LOAD]):02x}{self.value.interpret():08x} - store: mem[{data_memory}] <- stack.pop()\n"
-
-            dict[self.name] = memory_pos
-            if self.type == "цело":
-                data_memory +=1
-                memory_pos += 4
-                memory_pos += 5
-            elif self.type == "долгоцело":
-                data_memory += 2
-                memory_pos += 8
-                memory_pos += 5
-
-
+            #context.output2st += f"{context.comm_memory_pos}-{context.comm_memory_pos + 4} - 0x{(opcode_to_binary[Opcode.LIT]):02x}{self.value.interpret():08x} - lit: stack.push({self.value.interpret()}))\n"
+            self.value.execute()
+            context.saveInt(self.name, self.value.interpret())
+            context.output2st += f"{context.comm_memory_pos}-{context.comm_memory_pos + 4} - 0x{(opcode_to_binary[Opcode.LOAD]):02x}{self.value.interpret():08x} - store: mem[{context.data_memory_pos-1}] <- stack.pop()\n"
+            context.inc_comm_memory_pos(5)
 
 
 class Assignment(Statement):
+    name = "variable"
+    value: Expression = None
+
     def execute(self):
         pass
+
 
 class Output(Statement):
     def execute(self):
         pass
+
 
 math_op = {"*", "+", "-", ":", "%"}
 high_op = {"*", ":", "%"}
@@ -278,7 +329,7 @@ def parse_epression(expression, isRecursion=False):
         tokens[i] = (epx)
         tokens.pop(i - 1)
         tokens.pop(i)  # правый элемент на i+1 , но я уже 1 удалил, так что i+1-1=1
-    #костыль, если приходит одно число
+    # костыль, если приходит одно число
     for _ in range(len(tokens)):
         if not isinstance(tokens[_], Expression):
             tokens[_] = parse_token(tokens[_])
@@ -311,15 +362,14 @@ def parse_token(token, tokens=[], index=0):
             case "%":
                 return Eq()
     elif token not in math_op:
-        return Number(int(token))
-data_memory = 0 #на дата-мемори указатель
-memory_pos = 0 #указатель
-dict = dict()  # пространство имен переменных \\где какая переменнная лежит
-output1st = "----------data_memory----------\n"
-output2st = "---------command_memory---------\n<address> - <HEXCODE> - <mnemonic>\n"
+        try:
+            return Number(int(token))
+        except ValueError:
+            return Variable(token)
+
+
 def translate(file):
-    global output1st
-    global output2st
+    global context
     program = Program()
     main = None
 
@@ -348,13 +398,11 @@ def translate(file):
                 st = Variable_Declaration()
                 st.type = tokens[0]
                 st.name = tokens[1]
-                st.value = parse_epression(tokens[3::],True)
+                st.value = parse_epression(tokens[3::], True)
                 main.statement_list.append(st)
 
-
-
     program.execute()
-    final_output = output1st + output2st
+    final_output = context.output1st + context.output2st
     return final_output
 
 
