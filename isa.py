@@ -64,7 +64,7 @@ opcode_to_binary = {
     Opcode.INC: 0x00,  # 0000 А можно 0b0 +
     Opcode.DEC: 0x01,  # 0001 +
     Opcode.SUB: 0x02,  # 0010 +
-    Opcode.ADD: 0x03,  # 0011  +
+    Opcode.ADD: 0x03,  # 0011 +
     Opcode.MUL: 0x04,  # TODO: :З :З :З :З :З :З :З :З :З :З :З :З :З :З
     Opcode.DIV: 0x05,  #
 
@@ -99,6 +99,8 @@ opcode_to_binary = {
 
     Opcode.RINTOT: 0x1D,  # +
     Opcode.TINTOR: 0x1E,  # +
+
+    Opcode.JMP: 0x20,
 
     Opcode.HALT: 0xFF,  # +
 }
@@ -140,8 +142,10 @@ binary_to_opcode = {
     0x1B: Opcode.IF,
     0x1C: Opcode.MIF,
 
-    0x1D: Opcode.RINTOT,
-    0x1E: Opcode.TINTOR,
+    0x1E: Opcode.RINTOT,
+    0x1F: Opcode.TINTOR,
+
+    0x20: Opcode.JMP,
 
     0xFF: Opcode.HALT,
 }
@@ -159,6 +163,7 @@ opcode_to_mnemonic = {
     Opcode.TOA: 0x9,
     Opcode.TOB: 0xA,
     Opcode.HALT: 0xFF,
+
 }
 
 
