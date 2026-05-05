@@ -5,7 +5,7 @@ trap-end;
 
 main;
 цело a = 0;
-while ( a < 16 );
+for ( цело i = 0 , i < 10 , i = i + 1 );
 a = a + 1;
-while-end;
+for-end
 main-end;

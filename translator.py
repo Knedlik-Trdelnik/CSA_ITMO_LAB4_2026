@@ -278,7 +278,6 @@ class If(Statement):
     def __init__(self):
         super().__init__()
         self.condition: Expression = None
-        self.body = []
 
     def execute(self):
         self.condition.execute()
@@ -303,11 +302,11 @@ class If(Statement):
 
         condition_result = self.condition.interpret()
         if condition_result != 0:
-            for stmt in self.body:
+            for stmt in self.statement_list:
                 stmt.execute()
         else:
             old_values = context.nameValue.copy()
-            for stmt in self.body:
+            for stmt in self.statement_list:
                 stmt.execute()
             context.nameValue = old_values
 
@@ -318,7 +317,6 @@ class While(Statement):
     def __init__(self):
         super().__init__()
         self.condition: Expression = None
-        self.body = []
 
     def execute(self):
         begin_addr = context.comm_memory_pos  # чтобы прыгать обратон
@@ -343,11 +341,11 @@ class While(Statement):
 
         condition_result = self.condition.interpret()
         if condition_result != 0:
-            for stmt in self.body:
+            for stmt in self.statement_list:
                 stmt.execute()
         else:
             old_values = context.nameValue.copy()
-            for stmt in self.body:
+            for stmt in self.statement_list:
                 stmt.execute()
             context.nameValue = old_values
 
@@ -355,6 +353,17 @@ class While(Statement):
         context.inc_comm_memory_pos(5)
         end_addr = context.comm_memory_pos
         context.output2st = context.output2st.replace(end_label, str(f"{end_addr:08x}"))
+
+
+class For(Statement):
+    def __init__(self):
+        super().__init__()
+        self.condition: Expression = None
+        self.var_dec: Variable_Declaration = None
+        self.var_assig: Assignment = None
+
+    def execute(self):
+        pass
 
 
 class Output(Statement):
@@ -563,13 +572,12 @@ def parse_token(token, tokens=[], index=0):
 def translate(file):
     global context
     program = Program()
-    main = None
-    loop = None
 
-    read_main = False
-    read_fucns = False
-    read_loop = False
+    statement_stack = []  # чтобы было удобно работать с вложенными блоками if-while-for
+    statement_stack.append(program)
+
     for line in file:
+        print(statement_stack)
         print(line)
         if (line == "\n"):
             continue
@@ -581,31 +589,35 @@ def translate(file):
         tokens = line[:index_of_end].split(" ")
 
         if tokens[0] == "main":
-            read_main = True
             main = Entry_Point()
-            program.statement_list.append(main)
+            statement_stack.append(main)
+
         elif tokens[0] == "main-end":
-            main.statement_list.append(Halt())
-            read_main = False
+            if isinstance(statement_stack[-1], Entry_Point):
+                main = statement_stack.pop()
+                main.statement_list.append(Halt())
+                statement_stack[-1].statement_list.append(
+                    main
+                )
+            else:
+                print(statement_stack)
+                raise KeyError("Неправильная стуктура вложенности!")
+
         print(tokens)
 
         '''
         Начинается намазюк
         '''
-        if read_main or read_loop:
+        if True:
             if tokens[0] in {"цело", "долгоцело", "грамота"}:
                 st = Variable_Declaration()
                 st.type = tokens[0]
                 st.name = tokens[1]
                 st.value = parse_epression(tokens[3::], True)
-                if read_main:
-                    main.statement_list.append(st)
-                elif read_loop:
-                    loop.body.append(st)
+
+                statement_stack[-1].statement_list.append(st)
             elif tokens[0] == "if":
-                read_loop = True
                 st = If()
-                loop = st
                 condition = tokens[2:-1]
 
                 if "==" in condition:
@@ -626,14 +638,12 @@ def translate(file):
                         parse_epression(condition[:idx], True),
                         parse_epression(condition[idx + 1:], True)
                     )
-                main.statement_list.append(st)
-            elif tokens[0] == "if-end":
-                loop = None
-                read_loop = False
+                else:
+                    raise KeyError(f"Cringe: условие в {line} невозможно распознать! Проверьте написание == (=)")
+                statement_stack.append(st)
+
             elif tokens[0] == "while":
-                read_loop = True
                 st = While()
-                loop = st
                 condition = tokens[2:-1]
 
                 if "==" in condition:
@@ -654,22 +664,52 @@ def translate(file):
                         parse_epression(condition[:idx], True),
                         parse_epression(condition[idx + 1:], True)
                     )
-                main.statement_list.append(st)
-            elif tokens[0] == "while-end":
-                loop = None
-                read_loop = False
+                else:
+                    raise KeyError(f"Cringe: условие в {line} невозможно распознать! Проверьте написание == (=)")
+                statement_stack.append(st)
+            elif tokens[0] == "for":
+                st = For()
+                condition = tokens[2:-1]
+
+                first_zap = condition.index(",")
+                second_zap = condition.index(",", first_zap + 1, len(condition) - 1)
+                print(first_zap)
+                dec = condition[:first_zap]
+                cond = condition[first_zap + 1:second_zap]
+                assig = condition[second_zap + 1:]
+                print(dec)
+                print(cond)
+                print(assig)
+                print(condition)
+
+                st = Variable_Declaration()
+                st.type = dec[0]
+                st.name = dec[1]
+                st.value = parse_epression(dec[3::], True)
+
+                input()
+            elif tokens[0] == "while-end" or tokens[0] == "if-end":
+                loop = statement_stack.pop()
+                statement_stack[-1].statement_list.append(
+                    loop
+                )
             elif len(tokens) >= 3:
                 if (tokens[1] == "="):
                     st = Assignment()
                     st.name = tokens[0]
                     st.value = parse_epression(tokens[2::], True)
-                    if read_loop:
-                        loop.body.append(st)
-                    elif read_main:
-                        main.statement_list.append(st)
+                    statement_stack[-1].statement_list.append(st)
+    print(statement_stack)
+    print(statement_stack[-1].statement_list[-1].statement_list)
+    print(statement_stack[-1].statement_list[-1].statement_list[1].statement_list)
+    print(statement_stack[-1].statement_list[-1].statement_list[1].statement_list[1].statement_list)
 
+    input()
+    statement_stack.pop().execute()
+    '''
     print(program.statement_list[0].statement_list)
     program.execute()
+    '''
     final_output = context.output1st + context.output2st
     print("Состояния переменных:")
     print(context.nameValue)
@@ -689,6 +729,7 @@ def main(source="input.txt", target="_", test="test.txt"):
     
     with open(target + ".hex", "w") as f:
         f.write(hex_code)
+        
     '''
     # print("source LoC:", len(source.split("\n")), "code instr:", len(code))
 

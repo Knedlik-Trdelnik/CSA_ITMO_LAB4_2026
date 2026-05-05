@@ -6,10 +6,16 @@
 10-14 - 0x0f00000000 - load: stack.push(mem[0]))
 15-19 - 0x0600000010 - lit: stack.push(16))
 20 - 0x02 - sub (stack.top-stack.second)
-21-25 - 0x1c0000002f - jump to 0000002f if stack.pop >= 0
+21-25 - 0x1c00000049 - jump to 00000049 if stack.pop >= 0
 26-30 - 0x0f00000000 - load: stack.push(mem[0]))
 31-35 - 0x0600000001 - lit: stack.push(1))
 36 - 0x03 - add: 	stack.pop()	stack.pop()	stack.push(stack.top+stack.second]))
 37-41 - 0x1f00000000 - store: mem[0] <- stack.pop()
-42-46  - 0x200000000a - jump to 10
-47 - 0xff - halt
+42-46 - 0x0f00000000 - load: stack.push(mem[0]))
+47-51 - 0x0600000007 - lit: stack.push(7))
+52 - 0x02 - sub: 	stack.pop()	stack.pop()	stack.push(stack.top-stack.second)
+53-57 - 0x1b00000044 - jump to 00000044 if stack.pop == 0
+58-62 - 0x0600000020 - lit: stack.push(32))
+63-67 - 0x1f00000000 - store: mem[0] <- stack.pop()
+68-72  - 0x200000000a - jump to 10
+73 - 0xff - halt
