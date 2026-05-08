@@ -1,21 +1,21 @@
 ---------data_memory_pos-32-bit---
 ---------command_memory---8-bit---
 <address> - <HEXCODE> - <mnemonic>
-0-4 - 0x0600000000 - lit: stack.push(0))
-5-9 - 0x1f00000000 - store: mem[0] <- stack.pop()
-10-14 - 0x0f00000000 - load: stack.push(mem[0]))
-15-19 - 0x0600000010 - lit: stack.push(16))
-20 - 0x02 - sub (stack.top-stack.second)
-21-25 - 0x1c00000049 - jump to 00000049 if stack.pop >= 0
-26-30 - 0x0f00000000 - load: stack.push(mem[0]))
-31-35 - 0x0600000001 - lit: stack.push(1))
-36 - 0x03 - add: 	stack.pop()	stack.pop()	stack.push(stack.top+stack.second]))
-37-41 - 0x1f00000000 - store: mem[0] <- stack.pop()
-42-46 - 0x0f00000000 - load: stack.push(mem[0]))
-47-51 - 0x0600000007 - lit: stack.push(7))
-52 - 0x02 - sub: 	stack.pop()	stack.pop()	stack.push(stack.top-stack.second)
-53-57 - 0x1b00000044 - jump to 00000044 if stack.pop == 0
-58-62 - 0x0600000020 - lit: stack.push(32))
-63-67 - 0x1f00000000 - store: mem[0] <- stack.pop()
-68-72  - 0x200000000a - jump to 10
-73 - 0xff - halt
+0x00-0x04 - 0x06-0000001 - lit: stack.push(-1))
+0x05-0x09 - 0x1f00000000 - store: mem[0] <- stack.pop()
+0x0a-0x0e - 0x0600000000 - lit: stack.push(0))
+0x0f-0x13 - 0x1f00000001 - store: mem[1] <- stack.pop()
+0x14-0x18 - 0x0f00000001 - load: stack.push(mem[1]))
+0x19-0x1d - 0x060000000a - lit: stack.push(10))
+0x1e - 0x02 - sub (stack.top-stack.second)
+0x1f-0x23 - 0x1c00000049 - jump to 0x00000049 if stack.pop >= 0
+0x24-0x28 - 0x0f00000000 - load: stack.push(mem[0]))
+0x29-0x2d - 0x0600000001 - lit: stack.push(1))
+0x2e - 0x03 - add: 	stack.pop()	stack.pop()	stack.push(stack.top+stack.second]))
+0x2f-0x33 - 0x1f00000000 - store: mem[0] <- stack.pop()
+0x34-0x38 - 0x0f00000001 - load: stack.push(mem[1]))
+0x39-0x3d - 0x0600000001 - lit: stack.push(1))
+0x3e - 0x03 - add: 	stack.pop()	stack.pop()	stack.push(stack.top+stack.second]))
+0x3f-0x43 - 0x1f00000001 - store: mem[1] <- stack.pop()
+0x44-0x48  - 0x2000000014 - jump to 0x00000014
+0x49 - 0xff - halt
