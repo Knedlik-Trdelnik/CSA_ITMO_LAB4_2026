@@ -25,7 +25,11 @@ class Number(Expression):
         return self.number
 
     def execute(self):
-        context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.LIT]):02x}{self.number:08x} - lit: stack.push({self.number}))\n"
+        val = self.number & 0xFFFFFFFF
+        context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.LIT]):02x}{val:08x} - lit: stack.push({self.number}))\n"
+
+        context.byte_code.append(opcode_to_binary[Opcode.LIT])
+        context.byte_code.extend(val.to_bytes(4, byteorder='big'))
         context.inc_comm_memory_pos(5)
 
 
@@ -40,7 +44,11 @@ class Variable(Expression):
         return context.nameValue[self.name]
 
     def execute(self):
-        context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.LOAD]):02x}{context.nameSpace[self.name]:08x} - load: stack.push(mem[{context.nameSpace[self.name]}]))\n"
+        addr = context.nameSpace[self.name] & 0xFFFFFFFF
+        context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.LOAD]):02x}{addr:08x} - load: stack.push(mem[{context.nameSpace[self.name]}]))\n"
+
+        context.byte_code.append(opcode_to_binary[Opcode.LOAD])
+        context.byte_code.extend(addr.to_bytes(4, byteorder='big'))
         context.inc_comm_memory_pos(5)
 
 
@@ -56,6 +64,7 @@ class Add(Expression):
         self.left.execute()
         self.right.execute()
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.ADD]):02x} - add: \tstack.pop()\tstack.pop()\tstack.push(stack.top+stack.second]))\n"
+        context.byte_code.append(opcode_to_binary[Opcode.ADD])
         context.inc_comm_memory_pos(1)
 
 
@@ -71,6 +80,7 @@ class Sub(Expression):
         self.left.execute()
         self.right.execute()
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.SUB]):02x} - sub: \tstack.pop()\tstack.pop()stack.push(stack.top-stack.second]))\n"
+        context.byte_code.append(opcode_to_binary[Opcode.SUB])
         context.inc_comm_memory_pos(1)
 
 
@@ -86,6 +96,7 @@ class Mul(Expression):
         self.left.execute()
         self.right.execute()
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.MUL]):02x} - mul: \tstack.pop()\tstack.pop()stack.push(stack.top*stack.second]))\n"
+        context.byte_code.append(opcode_to_binary[Opcode.MUL])
         context.inc_comm_memory_pos(1)
 
 
@@ -101,6 +112,7 @@ class Div(Expression):
         self.left.execute()
         self.right.execute()
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.DIV]):02x} - div: stack.pop()\tstack.pop()\tstack.push(stack.top%stack.second]))\tstack.push(stack.top//stack.second]))\n"
+        context.byte_code.append(opcode_to_binary[Opcode.DIV])
         context.inc_comm_memory_pos(1)
 
 
@@ -130,6 +142,7 @@ class Greater(Expression):
         self.right.execute()
         self.left.execute()
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.SUB]):02x} - sub (stack.top-stack.second)\n"
+        context.byte_code.append(opcode_to_binary[Opcode.SUB])
         context.inc_comm_memory_pos(1)
 
 
@@ -147,6 +160,7 @@ class Less(Expression):
         self.left.execute()
         self.right.execute()
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.SUB]):02x} - sub (stack.top-stack.second)\n"
+        context.byte_code.append(opcode_to_binary[Opcode.SUB])
         context.inc_comm_memory_pos(1)
 
 
@@ -164,6 +178,7 @@ class Equal(Expression):
         self.left.execute()
         self.right.execute()
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.SUB]):02x} - sub: \tstack.pop()\tstack.pop()\tstack.push(stack.top-stack.second)\n"
+        context.byte_code.append(opcode_to_binary[Opcode.SUB])
         context.inc_comm_memory_pos(1)
 
 
@@ -176,6 +191,7 @@ class Context:
     output1st = "---------data_memory_pos-32-bit---\n"
     output2st = "---------command_memory---8-bit---\n<address> - <HEXCODE> - <mnemonic>\n"
     byte_code = bytearray()
+
     def saveLong(self, name, value, type="долгоцело"):
         self.nameValue[name] = value
         self.nameSpace[name] = self.data_memory_pos
@@ -231,13 +247,16 @@ class Variable_Declaration(Statement):
         value: Expression = None
 
     def execute(self):
-
         if self.name in context.nameSpace.keys():
             raise KeyError(f"ашипка: переменная {self.name} уже определена")
         else:
             self.value.execute()
             context.saveInt(self.name, self.value.interpret())
-            context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.STORE]):02x}{context.data_memory_pos - 1:08x} - store: mem[{context.data_memory_pos - 1}] <- stack.pop()\n"
+            addr = (context.data_memory_pos - 1) & 0xFFFFFFFF
+            context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.STORE]):02x}{addr:08x} - store: mem[{context.data_memory_pos - 1}] <- stack.pop()\n"
+
+            context.byte_code.append(opcode_to_binary[Opcode.STORE])
+            context.byte_code.extend(addr.to_bytes(4, byteorder='big'))
             context.inc_comm_memory_pos(5)
 
 
@@ -258,7 +277,11 @@ class Assignment(Statement):
                 if abs(self.value.interpret()) > 2 ** 31 - 1:
                     raise KeyError(f"ашипка: выражение, присваиваемое {self.name}, находится вне ОДЗ 32-битного int`а")
                 context.rewrite(self.name, self.value.interpret())
-                context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.STORE]):02x}{context.nameSpace[self.name]:08x} - store: mem[{context.nameSpace[self.name]}] <- stack.pop()\n"
+                addr = context.nameSpace[self.name] & 0xFFFFFFFF
+                context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.STORE]):02x}{addr:08x} - store: mem[{context.nameSpace[self.name]}] <- stack.pop()\n"
+
+                context.byte_code.append(opcode_to_binary[Opcode.STORE])
+                context.byte_code.extend(addr.to_bytes(4, byteorder='big'))
                 context.inc_comm_memory_pos(5)
                 print(f"Новое значение = {self.value.interpret()}")
             elif var_type == "долгоцело":
@@ -270,6 +293,7 @@ class Assignment(Statement):
 class Halt(Statement):
     def execute(self):
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.HALT]):02x} - halt\n"
+        context.byte_code.append(opcode_to_binary[Opcode.HALT])
         context.inc_comm_memory_pos(1)
 
 
@@ -281,12 +305,13 @@ class If(Statement):
     def execute(self):
         self.condition.execute()
 
-        op = None
-        if isinstance(self.condition, Equal):
-            op = Opcode.IF
-        else:
-            op = Opcode.MIF
+        op = Opcode.IF if isinstance(self.condition, Equal) else Opcode.MIF
         end_label = f"<if-end-{id(self)}>"
+
+        context.byte_code.append(opcode_to_binary[op])
+        patch_idx = len(context.byte_code)
+        context.byte_code.extend(b'\x00\x00\x00\x00')
+
         if isinstance(self.condition, Equal):
             context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[op]):02x}{end_label} - jump to 0x{end_label} if stack.pop == 0\n"
         else:
@@ -304,7 +329,9 @@ class If(Statement):
                 stmt.execute()
             context.nameValue = old_values
 
-        context.output2st = context.output2st.replace(end_label, str(f"{context.comm_memory_pos:08x}"))
+        end_addr = context.comm_memory_pos
+        context.output2st = context.output2st.replace(end_label, str(f"{end_addr:08x}"))
+        context.byte_code[patch_idx: patch_idx + 4] = (end_addr & 0xFFFFFFFF).to_bytes(4, byteorder='big')
 
 
 class While(Statement):
@@ -315,13 +342,14 @@ class While(Statement):
     def execute(self):
         begin_addr = context.comm_memory_pos
         self.condition.execute()
-        op = None
-        if isinstance(self.condition, Equal):
-            op = Opcode.IF
-        else:
-            op = Opcode.MIF
 
+        op = Opcode.IF if isinstance(self.condition, Equal) else Opcode.MIF
         end_label = f"<while-end-{id(self)}>"
+
+        context.byte_code.append(opcode_to_binary[op])
+        patch_idx = len(context.byte_code)
+        context.byte_code.extend(b'\x00\x00\x00\x00')
+
         if isinstance(self.condition, Equal):
             context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[op]):02x}{end_label} - jump to 0x{end_label} if stack.pop == 0\n"
         else:
@@ -340,9 +368,14 @@ class While(Statement):
             context.nameValue = old_values
 
         context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x}  - 0x{(opcode_to_binary[Opcode.JMP]):02x}{begin_addr:08x} - jump to 0x{begin_addr:08x}\n"
+
+        context.byte_code.append(opcode_to_binary[Opcode.JMP])
+        context.byte_code.extend((begin_addr & 0xFFFFFFFF).to_bytes(4, byteorder='big'))
         context.inc_comm_memory_pos(5)
+
         end_addr = context.comm_memory_pos
         context.output2st = context.output2st.replace(end_label, str(f"{end_addr:08x}"))
+        context.byte_code[patch_idx: patch_idx + 4] = (end_addr & 0xFFFFFFFF).to_bytes(4, byteorder='big')
 
 
 class For(Statement):
@@ -356,13 +389,14 @@ class For(Statement):
         self.var_dec.execute()
         begin_addr = context.comm_memory_pos
         self.condition.execute()
-        op = None
-        if isinstance(self.condition, Equal):
-            op = Opcode.IF
-        else:
-            op = Opcode.MIF
 
+        op = Opcode.IF if isinstance(self.condition, Equal) else Opcode.MIF
         end_label = f"<while-end-{id(self)}>"
+
+        context.byte_code.append(opcode_to_binary[op])
+        patch_idx = len(context.byte_code)
+        context.byte_code.extend(b'\x00\x00\x00\x00')
+
         if isinstance(self.condition, Equal):
             context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[op]):02x}{end_label} - jump to 0x{end_label} if stack.pop == 0\n"
         else:
@@ -383,9 +417,14 @@ class For(Statement):
         self.var_assig.execute()
 
         context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x}  - 0x{(opcode_to_binary[Opcode.JMP]):02x}{begin_addr:08x} - jump to 0x{begin_addr:08x}\n"
+
+        context.byte_code.append(opcode_to_binary[Opcode.JMP])
+        context.byte_code.extend((begin_addr & 0xFFFFFFFF).to_bytes(4, byteorder='big'))
         context.inc_comm_memory_pos(5)
+
         end_addr = context.comm_memory_pos
         context.output2st = context.output2st.replace(end_label, str(f"{end_addr:08x}"))
+        context.byte_code[patch_idx: patch_idx + 4] = (end_addr & 0xFFFFFFFF).to_bytes(4, byteorder='big')
 
 
 class Output(Statement):
@@ -638,7 +677,8 @@ def translate(file):
         print(tokens)
 
         if True:
-            if tokens[0] in {"цело", "долгоцело", "грамота"} and ("читай_память" not in line) and ("пиши_память" not in line) :
+            if tokens[0] in {"цело", "долгоцело", "грамота"} and ("читай_память" not in line) and (
+                    "пиши_память" not in line):
                 st = Variable_Declaration()
                 st.type = tokens[0]
                 st.name = tokens[1]
@@ -703,24 +743,16 @@ def translate(file):
     return final_output
 
 def to_bytes(code):
-    binary_bytes = bytearray()
-    for instr in code.splitlines():
-        operation = instr.split("-")
-        print(operation)
-        input()
 
-    return bytes(binary_bytes)
+    return bytes(context.byte_code)
 
 
 def main(source="input.txt", target="program", test="test.txt"):
-
     with open(source, encoding="utf-8") as f_debug:
         code = translate(f_debug)
 
-
     with open(test, "w", encoding="utf-8") as f:
         f.write(code)
-
 
     binary_data = to_bytes(code)
 

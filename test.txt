@@ -1,7 +1,7 @@
 ---------data_memory_pos-32-bit---
 ---------command_memory---8-bit---
 <address> - <HEXCODE> - <mnemonic>
-0x00-0x04 - 0x06-0000001 - lit: stack.push(-1))
+0x00-0x04 - 0x06ffffffff - lit: stack.push(-1))
 0x05-0x09 - 0x1f00000000 - store: mem[0] <- stack.pop()
 0x0a-0x0e - 0x0600000000 - lit: stack.push(0))
 0x0f-0x13 - 0x1f00000001 - store: mem[1] <- stack.pop()
