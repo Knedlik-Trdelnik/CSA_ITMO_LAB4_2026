@@ -123,7 +123,6 @@ binary_to_opcode = {
     0x0D: Opcode.BLOAD,
     0x0E: Opcode.ALOAD,
     0x0F: Opcode.LOAD,
-    0x1F: Opcode.STORE,  #
 
     0x10: Opcode.LSHIFT,
     0x11: Opcode.RSHIFT,
@@ -142,29 +141,17 @@ binary_to_opcode = {
     0x1B: Opcode.IF,
     0x1C: Opcode.MIF,
 
-    0x1E: Opcode.RINTOT,
-    0x1F: Opcode.TINTOR,
+    0x1D: Opcode.RINTOT,
+    0x1E: Opcode.TINTOR,
+
+    0x1F: Opcode.STORE,
 
     0x20: Opcode.JMP,
 
     0xFF: Opcode.HALT,
 }
 
-opcode_to_mnemonic = {
-    Opcode.INC: 0x0,  # 0000 А можно 0b0
-    Opcode.DEC: 0x1,  # 0001
-    Opcode.SUB: 0x2,  # 0010
-    Opcode.ADD: 0x3,  # 0011
-    Opcode.LIT: 0x4,  # 0100
-    Opcode.JMP: 0x5,  # 0110
-    Opcode.CALL: 0x6,
-    Opcode.RET: 0x7,
-    Opcode.OVER: 0x8,
-    Opcode.TOA: 0x9,
-    Opcode.TOB: 0xA,
-    Opcode.HALT: 0xFF,
 
-}
 
 
 def to_bytes(code):

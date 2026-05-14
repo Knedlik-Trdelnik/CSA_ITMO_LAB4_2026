@@ -1,9 +1,13 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 from os import system
+import json
 
 from isa import Opcode, opcode_to_binary, binary_to_opcode
 
+
+INPUT_PORT_ADDR = 31998
+OUTPUT_PORT_ADDR = 31999
 
 class Expression(ABC):
     global context
@@ -36,7 +40,6 @@ class Number(Expression):
 class Variable(Expression):
     def __init__(self, name: str):
         self.name = name
-        print(context.nameSpace.keys())
 
     def interpret(self):
         if self.name not in context.nameSpace.keys():
@@ -111,8 +114,17 @@ class Div(Expression):
     def execute(self):
         self.left.execute()
         self.right.execute()
-        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.DIV]):02x} - div: stack.pop()\tstack.pop()\tstack.push(stack.top%stack.second]))\tstack.push(stack.top//stack.second]))\n"
+
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.DIV]):02x} - div: calc both % and //\n"
         context.byte_code.append(opcode_to_binary[Opcode.DIV])
+        context.inc_comm_memory_pos(1)
+
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.OVER]):02x} - over\n"
+        context.byte_code.append(opcode_to_binary[Opcode.OVER])
+        context.inc_comm_memory_pos(1)
+
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.DROP]):02x} - drop: leave only //\n"
+        context.byte_code.append(opcode_to_binary[Opcode.DROP])
         context.inc_comm_memory_pos(1)
 
 
@@ -125,7 +137,16 @@ class Eq(Expression):
         return (self.left.interpret() % self.right.interpret())
 
     def execute(self):
-        pass
+        self.left.execute()
+        self.right.execute()
+
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.DIV]):02x} - div (mod): calc both % and //\n"
+        context.byte_code.append(opcode_to_binary[Opcode.DIV])
+        context.inc_comm_memory_pos(1)
+
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.DROP]):02x} - drop: leave only %\n"
+        context.byte_code.append(opcode_to_binary[Opcode.DROP])
+        context.inc_comm_memory_pos(1)
 
 
 class Greater(Expression):
@@ -191,6 +212,7 @@ class Context:
     output1st = "---------data_memory_pos-32-bit---\n"
     output2st = "---------command_memory---8-bit---\n<address> - <HEXCODE> - <mnemonic>\n"
     byte_code = bytearray()
+    entry_point = 0
 
     def saveLong(self, name, value, type="долгоцело"):
         self.nameValue[name] = value
@@ -235,6 +257,7 @@ class Program(Statement):
 
 class Entry_Point(Statement):
     def execute(self):
+        context.entry_point = context.comm_memory_pos
         for _ in self.statement_list:
             _.execute()
 
@@ -283,7 +306,6 @@ class Assignment(Statement):
                 context.byte_code.append(opcode_to_binary[Opcode.STORE])
                 context.byte_code.extend(addr.to_bytes(4, byteorder='big'))
                 context.inc_comm_memory_pos(5)
-                print(f"Новое значение = {self.value.interpret()}")
             elif var_type == "долгоцело":
                 pass
             elif var_type == "грамота":
@@ -428,9 +450,37 @@ class For(Statement):
 
 
 class Output(Statement):
-    def execute(self):
-        pass
+    def __init__(self):
+        super().__init__()
+        self.value: Expression = None
 
+    def execute(self):
+        self.value.execute()
+
+        context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.STORE]):02x}{OUTPUT_PORT_ADDR:08x} - store: mem[{OUTPUT_PORT_ADDR}] <- stack.pop() (ВЫВОД)\n"
+
+        context.byte_code.append(opcode_to_binary[Opcode.STORE])
+        context.byte_code.extend(OUTPUT_PORT_ADDR.to_bytes(4, byteorder='big'))
+        context.inc_comm_memory_pos(5)
+
+
+class Input(Expression):
+    def interpret(self):
+        return 0
+
+    def execute(self):
+        context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.LOAD]):02x}{INPUT_PORT_ADDR:08x} - load: stack.push(mem[{INPUT_PORT_ADDR}]) (ВВОД)\n"
+        buf = input("Text your input to create [traps]")
+        value = ""
+        try:
+            value = int(buf)
+        except ValueError:
+            value = buf.split()
+        print(value)
+        input()
+        context.byte_code.append(opcode_to_binary[Opcode.LOAD])
+        context.byte_code.extend(INPUT_PORT_ADDR.to_bytes(4, byteorder='big'))
+        context.inc_comm_memory_pos(5)
 
 math_op = {"*", "+", "-", ":", "%"}
 high_op = {"*", ":", "%"}
@@ -514,22 +564,20 @@ def parse_epression(expression, isRecursion=False):
         tokens = tokens.split(" ")
     else:
         tokens = expression
-    print(tokens)
+
 
     while check_next_highest_op(tokens):
         first_index, second_index = check_next_highest_op(tokens)
         subtokens = tokens[first_index + 1:second_index]
 
-        print(subtokens)
-        print(tokens)
-        print(first_index, second_index)
+
         subexspression = parse_epression(subtokens, True)
         tokens[first_index:second_index + 1] = " "
         tokens[first_index] = subexspression
 
     while check_next_hight_op(tokens):
         i = check_next_hight_op(tokens)
-        print(tokens)
+
         token = tokens[i]
         left_token = None
         right_token = None
@@ -558,7 +606,7 @@ def parse_epression(expression, isRecursion=False):
 
     while check_next_low_op(tokens):
         i = check_next_low_op(tokens)
-        print(tokens)
+
         token = tokens[i]
         left_token = None
         right_token = None
@@ -591,11 +639,15 @@ def parse_epression(expression, isRecursion=False):
     return final_expression
 
 
-def parse_token(token, tokens=[], index=0):
+def parse_token(token, tokens=None, index=0):
     if isinstance(token, Expression):
         return token
     if token is None:
         return None
+
+
+    if isinstance(token, str) and "читай_память" in token:
+        return Input()
 
     if token in math_op:
         match token:
@@ -648,102 +700,116 @@ def translate(file):
     statement_stack.append(program)
 
     for line in file:
-        print(statement_stack)
-        print(line)
-        if (line == "\n"):
+        if line == "\n" or line.strip() == "":
             continue
-        print(line.strip())
+
         try:
             index_of_end = line.index(";")
         except ValueError:
             raise KeyError(f"|||{line}||| - нет ; на конце")
-        tokens = line[:index_of_end].split(" ")
+
+        # Разбиваем строку на токены, игнорируя лишние пробелы
+        raw_string = line[:index_of_end].strip()
+        tokens = [t for t in raw_string.split(" ") if t]
+
+        if not tokens:
+            continue
 
         if tokens[0] == "main":
-            main = Entry_Point()
-            statement_stack.append(main)
+
+
+            main_block = Entry_Point()
+            statement_stack.append(main_block)
 
         elif tokens[0] == "main-end":
             if isinstance(statement_stack[-1], Entry_Point):
-                main = statement_stack.pop()
-                main.statement_list.append(Halt())
-                statement_stack[-1].statement_list.append(
-                    main
-                )
+                main_block = statement_stack.pop()
+                main_block.statement_list.append(Halt())
+                statement_stack[-1].statement_list.append(main_block)
             else:
-                print(statement_stack)
-                raise KeyError("Неправильная стуктура вложенности!")
+                raise KeyError("Неправильная стуктура вложенности (main)!")
 
-        print(tokens)
 
-        if True:
-            if tokens[0] in {"цело", "долгоцело", "грамота"} and ("читай_память" not in line) and (
-                    "пиши_память" not in line):
-                st = Variable_Declaration()
-                st.type = tokens[0]
-                st.name = tokens[1]
-                st.value = parse_epression(tokens[3::], True)
+        elif tokens[0] == "trap":
+            trap_block = Entry_Point()
+            statement_stack.append(trap_block)
 
-                statement_stack[-1].statement_list.append(st)
-            elif tokens[0] == "if":
-                st = If()
-                condition = tokens[2:-1]
-                parse_condition(st, condition, line)
-                statement_stack.append(st)
+        elif tokens[0] == "trap-end":
+            trap_block = statement_stack.pop()
+            statement_stack[-1].statement_list.append(trap_block)
 
-            elif tokens[0] == "while":
-                st = While()
-                condition = tokens[2:-1]
-                parse_condition(st, condition, line)
-                statement_stack.append(st)
-            elif tokens[0] == "for":
-                st = For()
-                condition = tokens[2:-1]
+        elif tokens[0] in {"цело", "долгоцело", "грамота"}:
+            st = Variable_Declaration()
+            st.type = tokens[0]
+            st.name = tokens[1]
+            st.value = parse_epression(tokens[3::], True)
+            statement_stack[-1].statement_list.append(st)
 
-                first_zap = condition.index(",")
-                second_zap = condition.index(",", first_zap + 1, len(condition) - 1)
 
-                dec = condition[:first_zap]
-                cond = condition[first_zap + 1:second_zap]
-                assig = condition[second_zap + 1:]
+        elif tokens[0].startswith("пиши_память"):
+            st = Output()
+            start = line.find('(')
+            end = line.rfind(')')
+            expr_str = line[start + 1:end].strip()
+            expr_tokens = [t for t in expr_str.split(" ") if t]
+            st.value = parse_epression(expr_tokens, True)
+            statement_stack[-1].statement_list.append(st)
 
-                vd = Variable_Declaration()
-                vd.type = dec[0]
-                vd.name = dec[1]
-                vd.value = parse_epression(dec[3::], True)
-                st.var_dec = vd
+        elif tokens[0] == "if":
+            st = If()
+            condition = tokens[2:-1]
+            parse_condition(st, condition, line)
+            statement_stack.append(st)
 
-                parse_condition(st, cond, line)
+        elif tokens[0] == "while":
+            st = While()
+            condition = tokens[2:-1]
+            parse_condition(st, condition, line)
+            statement_stack.append(st)
 
-                assignment = Assignment()
-                assignment.name = assig[0]
-                assignment.value = parse_epression(assig[2::], True)
-                st.var_assig = assignment
+        elif tokens[0] == "for":
+            st = For()
+            condition = tokens[2:-1]
 
-                statement_stack.append(st)
+            first_zap = condition.index(",")
+            second_zap = condition.index(",", first_zap + 1, len(condition) - 1)
 
-            elif tokens[0] == "while-end" or tokens[0] == "if-end" or tokens[0] == "for-end":
-                loop = statement_stack.pop()
-                statement_stack[-1].statement_list.append(
-                    loop
-                )
-            elif len(tokens) >= 3:
-                # Обновил проверку приоритетов or/and
-                if (tokens[1] == "=") and ("читай_память" not in line) and ("пиши_память" not in line):
-                    st = Assignment()
-                    st.name = tokens[0]
-                    st.value = parse_epression(tokens[2::], True)
-                    statement_stack[-1].statement_list.append(st)
+            dec = condition[:first_zap]
+            cond = condition[first_zap + 1:second_zap]
+            assig = condition[second_zap + 1:]
+
+            vd = Variable_Declaration()
+            vd.type = dec[0]
+            vd.name = dec[1]
+            vd.value = parse_epression(dec[3::], True)
+            st.var_dec = vd
+
+            parse_condition(st, cond, line)
+
+            assignment = Assignment()
+            assignment.name = assig[0]
+            assignment.value = parse_epression(assig[2::], True)
+            st.var_assig = assignment
+
+            statement_stack.append(st)
+
+        elif tokens[0] in {"while-end", "if-end", "for-end"}:
+            loop = statement_stack.pop()
+            statement_stack[-1].statement_list.append(loop)
+
+        elif len(tokens) >= 3 and tokens[1] == "=":
+            st = Assignment()
+            st.name = tokens[0]
+            st.value = parse_epression(tokens[2::], True)
+            statement_stack[-1].statement_list.append(st)
 
     statement_stack.pop().execute()
 
     final_output = context.output1st + context.output2st
-    print("Состояния переменных:")
-    print(context.nameValue)
     return final_output
 
-def to_bytes(code):
 
+def to_bytes(code):
     return bytes(context.byte_code)
 
 
@@ -759,7 +825,27 @@ def main(source="input.txt", target="program", test="test.txt"):
     with open(target + ".bin", "wb") as f:
         f.write(binary_data)
 
-    print(f"Успешно! Размер бинарного файла: {len(binary_data)} байт.")
+    config = {
+        "input_port": INPUT_PORT_ADDR,
+        "output_port": OUTPUT_PORT_ADDR,
+        "data_memory_size": 32000,
+        "command_memory_size": 32000,
+        "entry_point": context.entry_point
+    }
+
+    with open("config.json", "w", encoding="utf-8") as f:
+        json.dump(config, f, indent=4)
+
+    print(f"Успех! Размер бинарного файла: {len(binary_data)} байт.")
+    print("Сгенерирован файл конфигурации: config.json")
+
+
+    print("Программа в байтовом представлении:")
+    cnt = 0
+    for i in context.byte_code:
+        print(f"{hex(cnt)[2:]}:{hex(i)[2:]}", end=" ")
+        cnt += 1
+    print()
 
 
 if __name__ == "__main__":

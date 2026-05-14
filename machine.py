@@ -1,55 +1,78 @@
 from isa import Opcode, opcode_to_binary, binary_to_opcode
-
+import json
+import sys
 
 class ALU:
     alu_output = None
-
     right = None
-    "Правый вход в АЛУ"
-
     left = None
-    "Левый вход в АЛУ"
+
+    flag_z = False
+    flag_n = False
 
     def __init__(self):
-        alu_output = 0
-        right = 0
-        left = 0
+        self.alu_output = 0
+        self.right = 0
+        self.left = 0
+        self.flag_z = False
+        self.flag_n = False
+
+    def update_flags(self, value):
+        """Обновляет флаги Z и N на основе переданного значения."""
+        self.flag_z = (value == 0)
+        self.flag_n = (value < 0)
+
+    def pass_through(self):
+        self.alu_output = self.left
+        self.update_flags(self.alu_output)
 
     def add(self):
         self.alu_output = self.left + self.right
+        self.update_flags(self.alu_output)
 
     def sub(self):
-        self.alu_output = self.left - self.right
+        self.alu_output = self.right -self.left
+        self.update_flags(self.alu_output)
 
     def mul_step(self):
+        self.update_flags(self.alu_output)
         pass
 
     def div_step(self):
+        self.update_flags(self.alu_output)
         pass
 
     def inc_left(self):
         self.alu_output = self.left + 1
+        self.update_flags(self.alu_output)
 
     def dec_left(self):
         self.alu_output = self.left - 1
+        self.update_flags(self.alu_output)
 
     def bite_and(self):
         self.alu_output = self.left & self.right
+        self.update_flags(self.alu_output)
 
     def bite_or(self):
         self.alu_output = self.left | self.right
+        self.update_flags(self.alu_output)
 
     def bite_Xor(self):
         self.alu_output = self.left ^ self.right
+        self.update_flags(self.alu_output)
 
     def bite_inv(self):
         self.alu_output = ~self.left
+        self.update_flags(self.alu_output)
 
     def bite_lshift(self):
         self.alu_output = self.left << 1
+        self.update_flags(self.alu_output)
 
     def bite_rshift(self):
         self.alu_output = self.left >> 1
+        self.update_flags(self.alu_output)
 
 
 class DataPath:
@@ -72,15 +95,22 @@ class DataPath:
     Сигнал "исполняется" за один такт. Корректность использования сигналов --
     задача `ControlUnit`.
     """
-    address_memory = None
-    "Регистр адреса, туда поступает значение из регистра а или б"
+    input_buffer = None
+    output_buffer = None
+
+    IO_INPUT_ADDR = None
+    IO_OUTPUT_ADDR = None
+    """ 
+    Для MMM
+    """
+
+    address_register = None
+    "Регистр адреса, туда поступает значение из регистра а"
 
     stack = None
     "Стек...что еще сказать?"
 
     stack_pointer = 0
-
-
 
     return_stack = None
     "Стек возврата...я все сказал"
@@ -99,17 +129,22 @@ class DataPath:
 
     ALU = None
 
-    def __init__(self, data_memory_size, ALU):
-        assert data_memory_size > 0, "Data_memory size should be non-zero"
+    def __init__(self, data_memory_size, alu, input_port, output_port, input_data=""):
         self.data_memory_size = data_memory_size
         self.data_memory = [0] * data_memory_size
         self.return_stack = []
         self.stack = []
-        # TODO: сделать огр на размер стека
-        self.data_address = 0
+        self.address_register = 0
         self.register_a = 0
         self.register_b = 0
-        self.ALU = ALU
+        self.ALU = alu
+
+
+        self.IO_INPUT_ADDR = input_port
+        self.IO_OUTPUT_ADDR = output_port
+
+        self.input_buffer = list(input_data)
+        self.output_buffer = []
 
     def signal_set_a(self, stack_or_ALU):
         if stack_or_ALU == True:
@@ -123,16 +158,38 @@ class DataPath:
         else:
             self.register_b = self.ALU.alu_output
 
-    def signal_latch_AR(self, value):
-        self.address_memory = value
-
     def read_from_memory(self):
-        return self.data_memory[self.data_address]
+        """Чтение из памяти с дешифратором адреса (Memory-Mapped I/O)"""
+        addr = self.address_register
+        if addr == self.IO_INPUT_ADDR:
+            if len(self.input_buffer) == 0:
+                raise EOFError("Входной буфер пуст! Остановка.")
+            symbol = self.input_buffer.pop(0)
+            print(f"[I/O] Прочитан символ: '{symbol}' (значение = {ord(symbol)})")
+            return ord(symbol)
+        elif addr == self.IO_OUTPUT_ADDR:
+            raise KeyError("Cannot read from output!")
+        else:
+            return self.data_memory[addr]
+
+    def write_to_memory(self):
+        """Запись в память с дешифратором адреса (Memory-Mapped I/O)"""
+        addr = self.address_register
+        value = self.stack_pop()
+        if addr == self.IO_OUTPUT_ADDR:
+            char = chr(value & 0xFF)
+            self.output_buffer.append(value)
+            print(f"[I/O] Выведен символ: '{char}' (значение =  {value})")
+        elif addr == self.IO_INPUT_ADDR:
+            raise KeyError("Cannot write to input!")
+        else:
+            self.data_memory[addr] = value
 
     def stack_pop(self):
+
         return self.stack.pop()
 
-    def stack_push(self, first_part, second_part, third_part, comm_value=[0, 0, 0, 0]):
+    def stack_push(self, first_part, second_part, third_part, comm_value=0):
         if first_part and second_part and not third_part:  # 1 1 0 A->TOP
             self.stack.append(self.register_a)
             self.register_a = 0
@@ -142,17 +199,16 @@ class DataPath:
         elif not first_part and second_part and not third_part:  # 0 1 0 ALU->TOP
             self.stack.append(self.ALU.alu_output)
         elif not first_part and not second_part and not third_part:  # 0 0 0 MEM->TOP
-            word = self.data_memory[self.data_address]
-            self.stack.append(word[3] << 0 | word[2] << 8 | word[1] << 16 | word[0] << 24)
+            self.stack.append(comm_value)
         elif first_part and second_part and third_part:  # 1 1 1 COM_MEM->TOP
-            word = comm_value
-            self.stack.append(word[3] << 0 | word[2] << 8 | word[1] << 16 | word[0] << 24)
+            self.stack.append(comm_value)
         elif first_part and not second_part and third_part:  # 1 0 1 R_STAK.POP->TOP
             self.stack.append(self.return_stack_pop())
 
     def stack_dup(self):
         self.stack.append(self.stack[-1])
 
+    # TODO: переписать на использование регистра B как буфера
     def stack_over(self):
         top = self.stack.pop()
         second = self.stack.pop()
@@ -182,6 +238,12 @@ class DataPath:
         else:
             self.ALU.right = self.register_b
 
+    def signal_latch_addres_register(self, a_or_cu, cu_value=0):
+        if a_or_cu == True:
+            self.address_register = self.register_a
+        else:
+            self.address_register = cu_value
+
 
 class ControlUnit:
     command_memory_size = None
@@ -202,11 +264,11 @@ class ControlUnit:
     step = None
     "Шаг выполнения инструкции"
 
-    def __init__(self, command_memory_size, data_path):
+    def __init__(self, command_memory_size, data_path, entry_point=0):
         self.command_memory_size = command_memory_size
         self.command_memory = [0] * command_memory_size
         self.data_path = data_path
-        self.program_counter = 0
+        self.program_counter = entry_point
         self._tick = 0
         self.step = 0
 
@@ -218,21 +280,20 @@ class ControlUnit:
         """Текущее модельное время процессора (в тактах)."""
         return self._tick
 
-    def signal_latch_program_counter(self, first_part, second_part):
+    def signal_latch_program_counter(self, first_part, second_part, arg_value=0):
         """Защёлкнуть новое значение счётчика команд.
-        На входе в MUX 4 значения - для выбора нужно два параметра
+        На входе в MUX 4 значения - для выбора нужно два параметра.
         """
-        "Пока что у меня фиксированная длина"
-        if first_part and second_part:  # 1 1
+        if first_part and second_part:        # 1 1: Из стека возвратов (RET)
             self.program_counter = self.data_path.return_stack_pop()
-        elif first_part and not second_part:  # 1 0
-            self.program_counter = self.data_path.return_stack_pop()  # TODO: изменить на аргумент инструкции для if
-        elif not first_part and second_part:  # 0 1
+        elif first_part and not second_part:  # 1 0: Переход по адресу (JMP, IF, CALL)
+            self.program_counter = arg_value
+        elif not first_part and second_part:  # 0 1: Пропуск 4 байт аргумента (LIT, LOAD, невыполненный IF)
             self.program_counter += 5
-        elif not first_part and not second_part:  # 0 0
+        elif not first_part and not second_part:  # 0 0: Обычная 1-байтовая инструкция
             self.program_counter += 1
 
-    def process_next_tick(self):  # noqa: C901 # код имеет хорошо структурирован, по этому не проблема.
+    def process_next_tick(self):
 
         """Основной цикл процессора. Декодирует и выполняет инструкцию.
 
@@ -262,9 +323,10 @@ class ControlUnit:
             raise StopIteration()
 
         if opcode is Opcode.LIT:
-            value = argue[3] << 0 | argue[2] << 8 | argue[1] << 16 | argue[0] << 24
+
+            value = int.from_bytes(argue, byteorder='big', signed=True)
             "А у меня все в Big-endian"
-            self.data_path.stack_push(True, True, True, argue)
+            self.data_path.stack_push(True, True, True, value)
             self.signal_latch_program_counter(False, True)
             "По - хорошему, одновременно с чтением защелкиваем PC...но ладно"
             self.tick()
@@ -457,16 +519,14 @@ class ControlUnit:
 
         if opcode is Opcode.ADD:
             if self.step == 0:
-                self.data_path.ALU.signal_set_left(self.data_path.stack.pop())
-                self.data_path.ALU.signal_set_right(self.data_path.stack.pop())
+                self.data_path.signal_set_left_ALU(True)
+                self.data_path.signal_set_right_ALU(True)
                 self.data_path.ALU.add()
                 self.step += 1
                 self.tick()
                 return
             if self.step == 1:
-                self.data_path.stack_push(
-                    self.data_path.ALU.alu_output
-                )
+                self.data_path.stack_push(False, True, False)
                 self.step = 0
                 self.signal_latch_program_counter(False, False)
                 self.tick()
@@ -483,12 +543,117 @@ class ControlUnit:
             self.signal_latch_program_counter(False, False)
             self.tick()
             return
+        if opcode is Opcode.STORE:
+            if self.step == 0:
+
+                value = int.from_bytes(argue, byteorder='big', signed=True)
+
+                self.data_path.signal_latch_addres_register(False, value)
+                self.step += 1
+                self.tick()
+            if self.step == 1:
+                self.data_path.write_to_memory()
+                self.step = 0
+                self.signal_latch_program_counter(False, True)
+                self.tick()
+                return
+        if opcode is Opcode.LOAD:
+            if self.step == 0:
+                value = int.from_bytes(argue, byteorder='big', signed=True)
+
+                self.data_path.signal_latch_addres_register(False, value)
+                self.step += 1
+                self.tick()
+            if self.step == 1:
+                val = self.data_path.read_from_memory()
+
+                self.data_path.stack_push(False, False, False, comm_value=val)
+                self.step = 0
+                self.signal_latch_program_counter(False, True)
+                self.tick()
+                return
+        if opcode is Opcode.JMP:
+            value = int.from_bytes(argue, byteorder='big', signed=False)
+            self.signal_latch_program_counter(True, False, value)
+            self.tick()
+            return
+
+        if opcode is Opcode.IF:
+            if self.step == 0:
+
+                self.data_path.signal_set_left_ALU(True)
+                self.data_path.ALU.pass_through()
+                self.step += 1
+                self.tick()
+                return
+
+            if self.step == 1:
+
+                value = int.from_bytes(argue, byteorder='big', signed=False)
+
+                if self.data_path.ALU.flag_z:
+                    self.signal_latch_program_counter(True, False, value)
+                else:
+                    self.signal_latch_program_counter(False, True)
+
+                self.step = 0
+                self.tick()
+                return
+
+        if opcode is Opcode.MIF:
+            if self.step == 0:
+
+                self.data_path.signal_set_left_ALU(True)
+                self.data_path.ALU.pass_through()
+                self.step += 1
+                self.tick()
+                return
+
+            if self.step == 1:
+
+                value = int.from_bytes(argue, byteorder='big', signed=False)
+
+                if not self.data_path.ALU.flag_n:
+                    self.signal_latch_program_counter(True, False, value)
+                else:
+                    self.signal_latch_program_counter(False, True)
+
+                self.step = 0
+                self.tick()
+                return
+        if opcode is Opcode.CALL:
+            value = int.from_bytes(argue, byteorder='big', signed=False)
+            self.data_path.return_stack_push(from_PC=True, PC_VAL=self.program_counter + 5)
+            self.signal_latch_program_counter(True, False, value)
+            self.tick()
+            return
+
+        if opcode is Opcode.RET:
+
+            self.signal_latch_program_counter(True, True)
+            self.tick()
+            return
+
+        if opcode is Opcode.RINTOT:
+
+            self.data_path.stack_push(True, False, True)
+            self.signal_latch_program_counter(False, False)
+            self.tick()
+            return
+
+        if opcode is Opcode.TINTOR:
+
+            self.data_path.return_stack_push(from_PC=False)
+            self.signal_latch_program_counter(False, False)
+            self.tick()
+            return
 
     def debug_print(self, instruction, arg):
         top = 0
         second = 0
         r_top = 0
-        int_atg = arg[3] << 0 | arg[2] << 8 | arg[1] << 16 | arg[0] << 24
+        bytes = [arg[3], arg[2], arg[1], arg[0]]
+        int_atg = int.from_bytes(bytes, byteorder='little', signed=True) #пасхалка
         try:
             top = self.data_path.stack[-1]
         except IndexError:
@@ -503,51 +668,81 @@ class ControlUnit:
             pass
         print(
             f"Program counter: {self.program_counter}, reg_A: {self.data_path.register_a}, reg_B {self.data_path.register_b}\n"
-            f"Stack top: {top}, stack second: {second} r_stack top : { r_top}\n"
+            f"Stack top: {top}, stack second: {second} r_stack top : {r_top}\n"
             f"Current tick: {self.current_tick() + 1}, current step = {self.step}, {not self.step}\n"
-            f"Current command: {instruction.__str__()}, current agument = {int_atg}\n"
+            f"Current command: {instruction.__str__()}, current argument = {int_atg}\n"
             f"<address> - <HEXCODE> - <mnemonic>\n"
             f"{self.program_counter} - {(opcode_to_binary.get(instruction)):02x}{(int_atg):08x} - <mnemonic>\n"
+            f"кусочек памяти - {self.data_path.data_memory[:32]}\n"
             f"----------Состояние регистров и памяти на начало такта!----------\n")
 
 
-def run_cpu():
-    alu = ALU()
-    DP = DataPath(64, alu)
-    CU = ControlUnit(64, DP)
+def run_cpu(code_file, input_file, config_file):
 
-    CU.command_memory[0] = 0x6  # LIT
-    CU.command_memory[1] = 0x00
-    CU.command_memory[2] = 0x00
-    CU.command_memory[3] = 0x00
-    CU.command_memory[4] = 0x0A
-    CU.command_memory[5] = 0x6  # LIT
-    CU.command_memory[6] = 0x00
-    CU.command_memory[7] = 0x00
-    CU.command_memory[8] = 0x00
-    CU.command_memory[9] = 0x04
-    CU.command_memory[10] = 0x02  # SUB
-    CU.command_memory[11] = 0x00  # INC
-    CU.command_memory[12] = 0x07  # TOA
-    CU.command_memory[13] = 0x09  # TOSTACKFROMA
-    CU.command_memory[14] = 0x12  # INV
-    CU.command_memory[15] = 0x6  # LIT
-    CU.command_memory[16] = 0xFF
-    CU.command_memory[17] = 0xFF
-    CU.command_memory[18] = 0xFF
-    CU.command_memory[19] = 0xFF
-    CU.command_memory[20] = 0x13  # OR
-    CU.command_memory[21] = 0x10  # LSHIFT
-    CU.command_memory[22] = 0x17
-    CU.command_memory[23] = 0x1E
-    CU.command_memory[24] = 0x1D
-    CU.command_memory[25] = 0xFF  # HALT
+    with open(config_file, "r", encoding="utf-8") as f:
+        config = json.load(f)
+
+    data_mem_size = config["data_memory_size"]
+    cmd_mem_size = config["command_memory_size"]
+    in_port = config["input_port"]
+    out_port = config["output_port"]
+    entry_point = config["entry_point"]
+
+    with open(code_file, "rb") as f:
+        binary_code = f.read()
+
+
     try:
-        while CU.current_tick() < 100:
-            CU.process_next_tick()
+        with open(input_file, "r", encoding="utf-8") as f:
+            input_text = f.read()
+    except FileNotFoundError:
+        input_text = ""
+
+
+    alu = ALU()
+    dp = DataPath(data_mem_size, alu, in_port, out_port, input_text)
+    cu = ControlUnit(cmd_mem_size, dp, entry_point=entry_point)
+
+
+    for i in range(len(binary_code)):
+        cu.command_memory[i] = binary_code[i]
+
+    print("=== ЗАПУСК СИМУЛЯЦИИ ===")
+    try:
+
+        limit = 100000
+        while cu.current_tick() < limit:
+            cu.process_next_tick()
+        print("Внимание: достигнут лимит тактов!")
     except StopIteration:
-        print("Усе")
+        print("Остановка: выполнена инструкция HALT.")
+    except EOFError as e:
+        print(f"Остановка: {e}")
+
+
+    print("\n==============================")
+    print("ВЫВОД ПРОГРАММЫ:")
+    for i in dp.output_buffer:
+        print(i, end=" ")
+    print()
+    print("==============================")
+    print(f"Затрачено тактов: {cu.current_tick()}")
+
+
+def main():
+
+    if len(sys.argv) == 4:
+        code_file = sys.argv[1]
+        input_file = sys.argv[2]
+        config_file = sys.argv[3]
+    else:
+
+        code_file = "program.bin"
+        input_file = "input.txt"
+        config_file = "config.json"
+
+    run_cpu(code_file, input_file, config_file)
 
 
 if __name__ == "__main__":
-    run_cpu()
+    main()

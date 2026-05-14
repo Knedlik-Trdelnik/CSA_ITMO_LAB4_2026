@@ -1,21 +1,27 @@
 ---------data_memory_pos-32-bit---
 ---------command_memory---8-bit---
 <address> - <HEXCODE> - <mnemonic>
-0x00-0x04 - 0x06ffffffff - lit: stack.push(-1))
+0x00-0x04 - 0x0f00007cfe - load: stack.push(mem[31998]) (ВВОД)
 0x05-0x09 - 0x1f00000000 - store: mem[0] <- stack.pop()
-0x0a-0x0e - 0x0600000000 - lit: stack.push(0))
-0x0f-0x13 - 0x1f00000001 - store: mem[1] <- stack.pop()
-0x14-0x18 - 0x0f00000001 - load: stack.push(mem[1]))
-0x19-0x1d - 0x060000000a - lit: stack.push(10))
-0x1e - 0x02 - sub (stack.top-stack.second)
-0x1f-0x23 - 0x1c00000049 - jump to 0x00000049 if stack.pop >= 0
-0x24-0x28 - 0x0f00000000 - load: stack.push(mem[0]))
-0x29-0x2d - 0x0600000001 - lit: stack.push(1))
-0x2e - 0x03 - add: 	stack.pop()	stack.pop()	stack.push(stack.top+stack.second]))
-0x2f-0x33 - 0x1f00000000 - store: mem[0] <- stack.pop()
-0x34-0x38 - 0x0f00000001 - load: stack.push(mem[1]))
-0x39-0x3d - 0x0600000001 - lit: stack.push(1))
-0x3e - 0x03 - add: 	stack.pop()	stack.pop()	stack.push(stack.top+stack.second]))
-0x3f-0x43 - 0x1f00000001 - store: mem[1] <- stack.pop()
-0x44-0x48  - 0x2000000014 - jump to 0x00000014
-0x49 - 0xff - halt
+0x0a-0x0e - 0x0f00000000 - load: stack.push(mem[0]))
+0x0f-0x13 - 0x1f00007cff - store: mem[31999] <- stack.pop() (ВЫВОД)
+0x14-0x18 - 0x06ffffffff - lit: stack.push(-1))
+0x19-0x1d - 0x1f00000001 - store: mem[1] <- stack.pop()
+0x1e-0x22 - 0x0600000005 - lit: stack.push(5))
+0x23-0x27 - 0x1f00000002 - store: mem[2] <- stack.pop()
+0x28-0x2c - 0x0f00000002 - load: stack.push(mem[2]))
+0x2d-0x31 - 0x060000000a - lit: stack.push(10))
+0x32 - 0x02 - sub (stack.top-stack.second)
+0x33-0x37 - 0x1c0000005d - jump to 0x0000005d if stack.pop >= 0
+0x38-0x3c - 0x0f00000001 - load: stack.push(mem[1]))
+0x3d-0x41 - 0x0600000001 - lit: stack.push(1))
+0x42 - 0x03 - add: 	stack.pop()	stack.pop()	stack.push(stack.top+stack.second]))
+0x43-0x47 - 0x1f00000001 - store: mem[1] <- stack.pop()
+0x48-0x4c - 0x0f00000002 - load: stack.push(mem[2]))
+0x4d-0x51 - 0x0600000001 - lit: stack.push(1))
+0x52 - 0x03 - add: 	stack.pop()	stack.pop()	stack.push(stack.top+stack.second]))
+0x53-0x57 - 0x1f00000002 - store: mem[2] <- stack.pop()
+0x58-0x5c  - 0x2000000028 - jump to 0x00000028
+0x5d-0x61 - 0x0f00000001 - load: stack.push(mem[1]))
+0x62-0x66 - 0x1f00007cff - store: mem[31999] <- stack.pop() (ВЫВОД)
+0x67 - 0xff - halt
