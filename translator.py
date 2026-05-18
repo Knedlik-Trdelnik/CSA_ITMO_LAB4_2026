@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
-from datetime import datetime
-from os import system
+import os
 import json
+import re
+import sys
+import random
+
 
 from isa import Opcode, opcode_to_binary, binary_to_opcode
 
@@ -30,6 +33,7 @@ class Number(Expression):
 
     def execute(self):
         val = self.number & 0xFFFFFFFF
+        val = self.number & 0xFFFFFFFF
         context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.LIT]):02x}{val:08x} - lit: stack.push({self.number}))\n"
 
         context.byte_code.append(opcode_to_binary[Opcode.LIT])
@@ -53,6 +57,27 @@ class Variable(Expression):
         context.byte_code.append(opcode_to_binary[Opcode.LOAD])
         context.byte_code.extend(addr.to_bytes(4, byteorder='big'))
         context.inc_comm_memory_pos(5)
+
+
+class ReadAddress(Expression):
+    def __init__(self, addr_expr: Expression):
+        self.addr_expr = addr_expr
+
+    def interpret(self):
+        return 0
+
+    def execute(self):
+        self.addr_expr.execute()
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.TOA]):02x} - toa\n"
+        context.byte_code.append(opcode_to_binary[Opcode.TOA])  # Переносим адрес со стека в регистр A
+        context.inc_comm_memory_pos(1)
+
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.ALOAD]):02x} - aload\n"
+        context.byte_code.append(opcode_to_binary[Opcode.ALOAD])  # Читаем память по адресу в A на стек
+        context.inc_comm_memory_pos(1)
+
+
+
 
 
 class Add(Expression):
@@ -114,17 +139,8 @@ class Div(Expression):
     def execute(self):
         self.left.execute()
         self.right.execute()
-
-        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.DIV]):02x} - div: calc both % and //\n"
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.DIV]):02x} - div\n"
         context.byte_code.append(opcode_to_binary[Opcode.DIV])
-        context.inc_comm_memory_pos(1)
-
-        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.OVER]):02x} - over\n"
-        context.byte_code.append(opcode_to_binary[Opcode.OVER])
-        context.inc_comm_memory_pos(1)
-
-        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.DROP]):02x} - drop: leave only //\n"
-        context.byte_code.append(opcode_to_binary[Opcode.DROP])
         context.inc_comm_memory_pos(1)
 
 
@@ -140,12 +156,8 @@ class Eq(Expression):
         self.left.execute()
         self.right.execute()
 
-        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.DIV]):02x} - div (mod): calc both % and //\n"
-        context.byte_code.append(opcode_to_binary[Opcode.DIV])
-        context.inc_comm_memory_pos(1)
-
-        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.DROP]):02x} - drop: leave only %\n"
-        context.byte_code.append(opcode_to_binary[Opcode.DROP])
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.MOD]):02x} - mod\n"
+        context.byte_code.append(opcode_to_binary[Opcode.MOD])
         context.inc_comm_memory_pos(1)
 
 
@@ -190,7 +202,7 @@ class Equal(Expression):
         self.left = left
         self.right = right
         self.op_type = "=="
-        self.jump_opcode = Opcode.IF
+        self.jump_opcode = Opcode.NIF
 
     def interpret(self):
         return int(self.left.interpret() == self.right.interpret())
@@ -202,30 +214,72 @@ class Equal(Expression):
         context.byte_code.append(opcode_to_binary[Opcode.SUB])
         context.inc_comm_memory_pos(1)
 
+class StringLiteral(Expression):
+    def __init__(self, text: str):
+        self.text = text
+
+        self.addr = context.saveStringData(text)
+
+    def interpret(self):
+        return self.addr
+
+    def execute(self):
+        context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.LIT]):02x}{self.addr:08x} - lit: stack.push(addr of '{self.text}')\n"
+
+        context.byte_code.append(opcode_to_binary[Opcode.LIT])
+        context.byte_code.extend(self.addr.to_bytes(4, byteorder='big'))
+        context.inc_comm_memory_pos(5)
 
 class Context:
-    data_memory_pos = 0  # на дата-мемори указатель  ( свободная ячейка) 32 бита
+    data_memory_pos = 1  # на дата-мемори указатель  ( свободная ячейка) 32 бита
     comm_memory_pos = 0  # указатель  на дата-мемори( свободная ячейка) 8 бит
     nameSpace = dict()  # пространство имен переменных \\где какая переменнная лежит\
     nameValue = dict()  # имитация памяти TODO: а нужна вообще?
     nameType = dict()  # для соблюдения типизации
+    data_image = {0: 0}
     output1st = "---------data_memory_pos-32-bit---\n"
     output2st = "---------command_memory---8-bit---\n<address> - <HEXCODE> - <mnemonic>\n"
     byte_code = bytearray()
     entry_point = 0
 
+
+    def saveStringData(self, text):
+        addr = self.data_memory_pos
+        codes = []
+        for char in text:
+            self.data_image[self.data_memory_pos] = ord(char)
+            codes.append(str(ord(char)))
+            self.data_memory_pos += 1
+        self.data_image[self.data_memory_pos] = 0
+        codes.append("0")
+        self.data_memory_pos += 1
+        end_addr = self.data_memory_pos - 1
+        self.output1st += f"0x{addr:02x}-0x{end_addr:02x} - String: \"{text}\" (ASCII: {', '.join(codes)}) | Указатель на начало: {addr} (0x{addr:02x})\n"
+        return addr
+
     def saveLong(self, name, value, type="долгоцело"):
         self.nameValue[name] = value
         self.nameSpace[name] = self.data_memory_pos
         self.nameType[name] = type
+        addr = self.data_memory_pos
+        self.output1st += f"0x{addr:02x}-0x{addr + 1:02x} - Переменная '{name}' ({type}) расположено на 0x{addr:02x}\n"
+
         self.data_memory_pos += 2
 
-        pass
-
     def saveInt(self, name, value, type="цело"):
+
         self.nameValue[name] = value
         self.nameSpace[name] = self.data_memory_pos
         self.nameType[name] = type
+
+        self.data_image[self.data_memory_pos] = value
+
+        addr = self.data_memory_pos
+        if type == "грамота":
+            self.output1st += f"0x{addr:02x}      - Переменная '{name}' (указатель на строку) расположен на 0x{addr:02x}\n"
+        else:
+            self.output1st += f"0x{addr:02x}      - Переменная '{name}' ({type}) расположен на 0x{addr:02x}\n"
+
         self.data_memory_pos += 1
 
     def rewrite(self, name, value):
@@ -256,8 +310,16 @@ class Program(Statement):
 
 
 class Entry_Point(Statement):
+    def __init__(self, is_trap=False):
+        super().__init__()
+        self.is_trap = is_trap
+
     def execute(self):
-        context.entry_point = context.comm_memory_pos
+        if self.is_trap:
+            context.data_image[0] = context.comm_memory_pos
+        else:
+            context.entry_point = context.comm_memory_pos
+
         for _ in self.statement_list:
             _.execute()
 
@@ -297,9 +359,8 @@ class Assignment(Statement):
             var_type = context.nameType[self.name]
             if var_type == "цело":
                 self.value.execute()
-                if abs(self.value.interpret()) > 2 ** 31 - 1:
-                    raise KeyError(f"ашипка: выражение, присваиваемое {self.name}, находится вне ОДЗ 32-битного int`а")
                 context.rewrite(self.name, self.value.interpret())
+
                 addr = context.nameSpace[self.name] & 0xFFFFFFFF
                 context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.STORE]):02x}{addr:08x} - store: mem[{context.nameSpace[self.name]}] <- stack.pop()\n"
 
@@ -327,7 +388,7 @@ class If(Statement):
     def execute(self):
         self.condition.execute()
 
-        op = Opcode.IF if isinstance(self.condition, Equal) else Opcode.MIF
+        op = self.condition.jump_opcode
         end_label = f"<if-end-{id(self)}>"
 
         context.byte_code.append(opcode_to_binary[op])
@@ -365,7 +426,7 @@ class While(Statement):
         begin_addr = context.comm_memory_pos
         self.condition.execute()
 
-        op = Opcode.IF if isinstance(self.condition, Equal) else Opcode.MIF
+        op = self.condition.jump_opcode
         end_label = f"<while-end-{id(self)}>"
 
         context.byte_code.append(opcode_to_binary[op])
@@ -412,7 +473,7 @@ class For(Statement):
         begin_addr = context.comm_memory_pos
         self.condition.execute()
 
-        op = Opcode.IF if isinstance(self.condition, Equal) else Opcode.MIF
+        op = self.condition.jump_opcode
         end_label = f"<while-end-{id(self)}>"
 
         context.byte_code.append(opcode_to_binary[op])
@@ -470,17 +531,83 @@ class Input(Expression):
 
     def execute(self):
         context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.LOAD]):02x}{INPUT_PORT_ADDR:08x} - load: stack.push(mem[{INPUT_PORT_ADDR}]) (ВВОД)\n"
-        buf = input("Text your input to create [traps]")
-        value = ""
-        try:
-            value = int(buf)
-        except ValueError:
-            value = buf.split()
-        print(value)
-        input()
         context.byte_code.append(opcode_to_binary[Opcode.LOAD])
         context.byte_code.extend(INPUT_PORT_ADDR.to_bytes(4, byteorder='big'))
         context.inc_comm_memory_pos(5)
+
+
+class PrintString(Statement):
+    def __init__(self):
+        super().__init__()
+        self.value: Expression = None
+
+    def execute(self):
+        self.value.execute()
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.TOA]):02x} - toa\n"
+        context.byte_code.append(opcode_to_binary[Opcode.TOA])
+        context.inc_comm_memory_pos(1)
+        begin_addr = context.comm_memory_pos
+        end_label = f"<str-end-{id(self)}>"
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.ALOADP]):02x} - aloadp (@+)\n"
+        context.byte_code.append(opcode_to_binary[Opcode.ALOADP])
+        context.inc_comm_memory_pos(1)
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.DUP]):02x} - dup\n"
+        context.byte_code.append(opcode_to_binary[Opcode.DUP])
+        context.inc_comm_memory_pos(1)
+
+        context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.IF]):02x}{end_label} - if (выход из цикла)\n"
+        context.byte_code.append(opcode_to_binary[Opcode.IF])
+        patch_idx = len(context.byte_code)
+        context.byte_code.extend(b'\x00\x00\x00\x00')
+        context.inc_comm_memory_pos(5)
+
+        context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.STORE]):02x}{OUTPUT_PORT_ADDR:08x} - store: Вывод символа\n"
+        context.byte_code.append(opcode_to_binary[Opcode.STORE])
+        context.byte_code.extend(OUTPUT_PORT_ADDR.to_bytes(4, byteorder='big'))
+        context.inc_comm_memory_pos(5)
+
+        context.output2st += f"0x{context.comm_memory_pos:02x}-0x{context.comm_memory_pos + 4:02x} - 0x{(opcode_to_binary[Opcode.JMP]):02x}{begin_addr:08x} - jump to 0x{begin_addr:08x} (повтор цикла)\n"
+        context.byte_code.append(opcode_to_binary[Opcode.JMP])
+        context.byte_code.extend(begin_addr.to_bytes(4, byteorder='big'))
+        context.inc_comm_memory_pos(5)
+
+        end_addr = context.comm_memory_pos
+        context.output2st = context.output2st.replace(end_label, str(f"{end_addr:08x}"))
+        context.byte_code[patch_idx: patch_idx + 4] = (end_addr & 0xFFFFFFFF).to_bytes(4, byteorder='big')
+
+
+class IRetStatement(Statement):
+    def execute(self):
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.IRET]):02x} - iret (возврат из прерывания)\n"
+        context.byte_code.append(opcode_to_binary[Opcode.IRET])
+        context.inc_comm_memory_pos(1)
+class EIStatement(Statement):
+    def execute(self):
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.EI]):02x} - ei (разрешить прерывания)\n"
+        context.byte_code.append(opcode_to_binary[Opcode.EI])
+        context.inc_comm_memory_pos(1)
+
+class DIStatement(Statement):
+    def execute(self):
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.DI]):02x} - di (запретить прерывания)\n"
+        context.byte_code.append(opcode_to_binary[Opcode.DI])
+        context.inc_comm_memory_pos(1)
+
+class WriteAddress(Statement):
+    def __init__(self, addr_expr: Expression, val_expr: Expression):
+        self.addr_expr = addr_expr
+        self.val_expr = val_expr
+
+    def execute(self):
+        self.val_expr.execute()
+        self.addr_expr.execute()
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.TOA]):02x} - toa\n"
+        context.byte_code.append(opcode_to_binary[Opcode.TOA])
+        context.inc_comm_memory_pos(1)
+
+        context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.ASTORE]):02x} - astore\n"
+        context.byte_code.append(opcode_to_binary[Opcode.ASTORE])
+        context.inc_comm_memory_pos(1)
 
 math_op = {"*", "+", "-", ":", "%"}
 high_op = {"*", ":", "%"}
@@ -645,9 +772,15 @@ def parse_token(token, tokens=None, index=0):
     if token is None:
         return None
 
-
     if isinstance(token, str) and "читай_память" in token:
         return Input()
+
+    if isinstance(token, str) and token.startswith("читай_адрес("):
+        var_name = token[12:-1].strip()
+        return ReadAddress(Variable(var_name))
+
+    if isinstance(token, str) and token.startswith('"') and token.endswith('"'):
+        return StringLiteral(token[1:-1])
 
     if token in math_op:
         match token:
@@ -699,6 +832,7 @@ def translate(file):
     statement_stack = []
     statement_stack.append(program)
 
+
     for line in file:
         if line == "\n" or line.strip() == "":
             continue
@@ -708,9 +842,8 @@ def translate(file):
         except ValueError:
             raise KeyError(f"|||{line}||| - нет ; на конце")
 
-        # Разбиваем строку на токены, игнорируя лишние пробелы
         raw_string = line[:index_of_end].strip()
-        tokens = [t for t in raw_string.split(" ") if t]
+        tokens = re.findall(r'"[^"]*"|\S+', raw_string)
 
         if not tokens:
             continue
@@ -729,13 +862,21 @@ def translate(file):
             else:
                 raise KeyError("Неправильная стуктура вложенности (main)!")
 
+        elif tokens[0] == "ei":
+            statement_stack[-1].statement_list.append(EIStatement())
+
+        elif tokens[0] == "di":
+            statement_stack[-1].statement_list.append(DIStatement())
 
         elif tokens[0] == "trap":
-            trap_block = Entry_Point()
+
+            trap_block = Entry_Point(is_trap=True)
+
             statement_stack.append(trap_block)
 
         elif tokens[0] == "trap-end":
             trap_block = statement_stack.pop()
+            trap_block.statement_list.append(IRetStatement())
             statement_stack[-1].statement_list.append(trap_block)
 
         elif tokens[0] in {"цело", "долгоцело", "грамота"}:
@@ -753,6 +894,25 @@ def translate(file):
             expr_str = line[start + 1:end].strip()
             expr_tokens = [t for t in expr_str.split(" ") if t]
             st.value = parse_epression(expr_tokens, True)
+            statement_stack[-1].statement_list.append(st)
+
+        elif tokens[0].startswith("пиши_строку"):
+            st = PrintString()
+            start = line.find('(')
+            end = line.rfind(')')
+            expr_str = line[start + 1:end].strip()
+            expr_tokens = [t for t in expr_str.split(" ") if t]
+            st.value = parse_epression(expr_tokens, True)
+            statement_stack[-1].statement_list.append(st)
+
+        elif tokens[0].startswith("пиши_адрес"):
+            st = WriteAddress(None, None)
+            start = line.find('(')
+            end = line.rfind(')')
+            args = line[start + 1:end].strip().split(',')
+
+            st.addr_expr = parse_epression([args[0].strip()], True)
+            st.val_expr = parse_epression([args[1].strip()], True)
             statement_stack[-1].statement_list.append(st)
 
         elif tokens[0] == "if":
@@ -813,16 +973,41 @@ def to_bytes(code):
     return bytes(context.byte_code)
 
 
-def main(source="input.txt", target="program", test="test.txt"):
-    with open(source, encoding="utf-8") as f_debug:
+def makeShedule(input_text, filename="shedule.txt"):
+    current_tick = 0
+    with open(filename, "w", encoding="utf-8") as f:
+        for char in input_text:
+            step = random.randint(20, 40)
+            current_tick += step
+            f.write(f"{current_tick} {char}\n")
+        f.write(f"{current_tick+ random.randint(3, 10)} {ord("\n")}\n")
+    print(f"+++ РАСПИСАНИЕ УСПЕШНО СФОРМИРОВАНО В {filename} +++")
+
+
+
+
+
+def main(source="input"):
+
+    with open(f"{source}.txt", encoding="utf-8") as f_debug:
         code = translate(f_debug)
 
-    with open(test, "w", encoding="utf-8") as f:
+
+    output_dir = "compiled"
+    os.makedirs(output_dir, exist_ok=True)
+
+
+    file_name = os.path.basename(source)
+
+    target_path = os.path.join(output_dir, file_name)
+
+
+    with open(f"{target_path}_debug.txt", "w", encoding="utf-8") as f:
         f.write(code)
 
     binary_data = to_bytes(code)
 
-    with open(target + ".bin", "wb") as f:
+    with open(f"{target_path}.bin", "wb") as f:
         f.write(binary_data)
 
     config = {
@@ -830,23 +1015,52 @@ def main(source="input.txt", target="program", test="test.txt"):
         "output_port": OUTPUT_PORT_ADDR,
         "data_memory_size": 32000,
         "command_memory_size": 32000,
-        "entry_point": context.entry_point
+        "entry_point": context.entry_point,
+        "data_image": context.data_image
     }
 
-    with open("config.json", "w", encoding="utf-8") as f:
+    with open(f"{target_path}_config.json", "w", encoding="utf-8") as f:
         json.dump(config, f, indent=4)
 
-    print(f"Успех! Размер бинарного файла: {len(binary_data)} байт.")
-    print("Сгенерирован файл конфигурации: config.json")
+    print("+++ РИТУАЛ ТРАНСЛЯЦИИ ЗАВЕРШЕН УСПЕХОМ +++")
+    print("[БЛАГОСЛОВЕНИЕ ОМНИССИИ ПОЛУЧЕНО]")
+    print(f"+++ Объем священной литании (Размер бинарного файла): {len(binary_data)} байт. +++")
+    print(f"+++ Дух Машины создал скрижаль конфигурации в: {target_path}_config.json +++")
 
-
-    print("Программа в байтовом представлении:")
+    print("[ЛОГ СВЯЩЕННОГО ГИМНА ОМНИССИИ ДЛЯ КОГИТАТОРА (ПОБАЙТОВОЕ ПРЕДСТАВЛЕНИЕ)]:")
     cnt = 0
     for i in context.byte_code:
         print(f"{hex(cnt)[2:]}:{hex(i)[2:]}", end=" ")
         cnt += 1
-    print()
+    print("\n+++ Поток данных чист. Код готов к слиянию с кремнием. +++")
 
 
 if __name__ == "__main__":
-    main()
+    print("+++ ЗАПУСК ПРОЦЕДУРЫ ТРАНСЛЯЦИИ В БИНАРНЫЙ ГИМН +++")
+    print("%ВЫБОР ПРОЦЕДУРЫ%\n1 // [ТРАНСЛЯЦИЯ И ЗАПУСК]\n2 // [ФОРМИРОВАНИЕ ОЧЕРЕДИ ВВОДА]")
+
+    choice = input().strip()
+
+    base_path = sys.argv[1] if len(sys.argv) > 1 else None
+
+    if choice == "1":
+        if base_path:
+            main(source=base_path)
+        else:
+            print("--- Предупреждение: Путь не указан. Используется дефолтный 'input' ---")
+            main(source="input")
+
+    elif choice == "2":
+        print("+++ УКАЖИТЕ ВАШЕ СООБЩЕНИЕ +++")
+        user_message = input()
+
+        output_dir = "compiled"
+        os.makedirs(output_dir, exist_ok=True)
+
+        if base_path:
+            file_name = os.path.basename(base_path)
+            schedule_file = os.path.join(output_dir, f"{file_name}_shedule.txt")
+        else:
+            schedule_file = os.path.join(output_dir, "shedule.txt")
+
+        makeShedule(user_message, filename=schedule_file)

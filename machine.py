@@ -34,13 +34,23 @@ class ALU:
         self.alu_output = self.right -self.left
         self.update_flags(self.alu_output)
 
-    def mul_step(self):
+    def mul(self):
+        self.alu_output = self.left * self.right
         self.update_flags(self.alu_output)
-        pass
 
-    def div_step(self):
+    def div(self):
+        if self.left == 0:
+            self.alu_output = 0
+        else:
+            self.alu_output = self.right // self.left
         self.update_flags(self.alu_output)
-        pass
+
+    def mod(self):
+        if self.left == 0:
+            self.alu_output = 0
+        else:
+            self.alu_output = self.right % self.left
+        self.update_flags(self.alu_output)
 
     def inc_left(self):
         self.alu_output = self.left + 1
@@ -74,34 +84,30 @@ class ALU:
         self.alu_output = self.left >> 1
         self.update_flags(self.alu_output)
 
+    def get_status(self):
+        return (int(self.flag_n) << 1) | int(self.flag_z)
+
+    def set_status(self, val):
+        self.flag_n = bool((val >> 1) & 1)
+        self.flag_z = bool(val & 1)
+
 
 class DataPath:
-    """Тракт данных (пассивный), включая: ввод/вывод, память и арифметику.
-    - data_memory_pos -- однопортовая, поэтому либо читаем, либо пишем.
-
-    - input/output -- токенизированная логика ввода-вывода. Не детализируется в
-      рамках модели.
-
-    - input -- чтение может вызвать остановку процесса моделирования, если буфер
-      входных значений закончился.
-
-    Реализованные методы соответствуют сигналам защёлкивания значений:
-
-    - `signal_latch_data_addr` -- защёлкивание адреса в памяти данных;
-    - `signal_latch_acc` -- защёлкивание аккумулятора;
-    - `signal_wr` -- запись в память данных;
-    - `signal_output` -- вывод в порт.
-
-    Сигнал "исполняется" за один такт. Корректность использования сигналов --
-    задача `ControlUnit`.
+    IE = None
+    in_interrupt = None
+    pending_interrupt = None
+    input_schedule = None
     """
-    input_buffer = None
+    Для прерываний
+    """
+
+    input_port_value = None
     output_buffer = None
 
     IO_INPUT_ADDR = None
     IO_OUTPUT_ADDR = None
     """ 
-    Для MMM
+    Для MMio
     """
 
     address_register = None
@@ -139,12 +145,13 @@ class DataPath:
         self.register_b = 0
         self.ALU = alu
 
-
         self.IO_INPUT_ADDR = input_port
         self.IO_OUTPUT_ADDR = output_port
 
-        self.input_buffer = list(input_data)
+
+        self.input_port_value = 0
         self.output_buffer = []
+
 
     def signal_set_a(self, stack_or_ALU):
         if stack_or_ALU == True:
@@ -162,11 +169,10 @@ class DataPath:
         """Чтение из памяти с дешифратором адреса (Memory-Mapped I/O)"""
         addr = self.address_register
         if addr == self.IO_INPUT_ADDR:
-            if len(self.input_buffer) == 0:
-                raise EOFError("Входной буфер пуст! Остановка.")
-            symbol = self.input_buffer.pop(0)
-            print(f"[I/O] Прочитан символ: '{symbol}' (значение = {ord(symbol)})")
-            return ord(symbol)
+            val = self.input_port_value
+            char_repr = chr(val) if 32 <= val <= 126 else f"\\x{val:02x}"
+            print(f"[I/O] Прочитан символ: '{char_repr}' (значение = {val})")
+            return val
         elif addr == self.IO_OUTPUT_ADDR:
             raise KeyError("Cannot read from output!")
         else:
@@ -264,13 +270,40 @@ class ControlUnit:
     step = None
     "Шаг выполнения инструкции"
 
-    def __init__(self, command_memory_size, data_path, entry_point=0):
+
+    IE = None
+    in_interrupt = None
+    pending_interrupt = None
+    input_schedule = None
+    entering_interrupt = None
+    int_step = None
+
+    def __init__(self, command_memory_size, data_path, entry_point=0,  input_schedule=None):
         self.command_memory_size = command_memory_size
         self.command_memory = [0] * command_memory_size
         self.data_path = data_path
         self.program_counter = entry_point
         self._tick = 0
         self.step = 0
+
+        self.IE = True
+        self.in_interrupt = False
+        self.pending_interrupt = False
+        self.input_schedule = input_schedule if input_schedule else []
+
+        self.entering_interrupt = False
+        self.int_step = 0
+
+    def check_interrupts(self):
+
+        while len(self.input_schedule) > 0 and self._tick >= self.input_schedule[0][0]:
+            tick_val, char_val = self.input_schedule.pop(0)
+            if char_val == "10":
+                self.data_path.input_port_value = 10
+            else:
+                self.data_path.input_port_value = ord(char_val)
+
+            self.pending_interrupt = True
 
     def tick(self):
         """Продвинуть модельное время процессора вперёд на один такт."""
@@ -295,29 +328,58 @@ class ControlUnit:
 
     def process_next_tick(self):
 
-        """Основной цикл процессора. Декодирует и выполняет инструкцию.
+        if self.step == 0:
+            self.check_interrupts()
 
-        Обработка инструкции:
+        if self.step == 0 and not self.entering_interrupt:
+            if self.pending_interrupt and self.IE:
+                self.entering_interrupt = True
+                self.int_step = 0
+                self.pending_interrupt = False
+                self.IE = False
+                self.in_interrupt = True
 
-        1. Проверить `Opcode`.
+        if self.entering_interrupt:
+            if self.int_step == 0:
+                self.data_path.return_stack_push(from_PC=True, PC_VAL=self.program_counter)
+                self.debug_print_interrupt("INT ENTRY: PUSH PC -> RS")
+                self.int_step += 1
+                self.tick()
+                return
+            elif self.int_step == 1:
+                sr = self.data_path.ALU.get_status()
+                self.data_path.return_stack.append(sr)
+                self.debug_print_interrupt("INT ENTRY: PUSH SR -> RS")
+                self.int_step += 1
+                self.tick()
+                return
+            elif self.int_step == 2:
+                self.data_path.signal_latch_addres_register(False, 0)
+                self.debug_print_interrupt("INT ENTRY: AR <- 0")
+                self.int_step += 1
+                self.tick()
+                return
+            elif self.int_step == 3:
+                val = self.data_path.read_from_memory()
+                self.data_path.stack_push(False, False, False, comm_value=val)
+                self.debug_print_interrupt("INT ENTRY: DS.PUSH( MEM[AR] )")
+                self.int_step += 1
+                self.tick()
+                return
+            elif self.int_step == 4:
+                self.program_counter = self.data_path.stack_pop()
+                self.entering_interrupt = False
+                self.debug_print_interrupt("INT ENTRY: PC <- DS.POP()")
+                self.tick()
+                return
 
-        2. Вызвать методы, имитирующие необходимые управляющие сигналы.
-
-        3. Продвинуть модельное время вперёд на один такт (`tick`).
-
-        4. (если необходимо) повторить шаги 2-3.
-
-        5. Перейти к следующей инструкции.
-
-        Обработка функций управления потоком исполнения вынесена в
-        `decode_and_execute_control_flow_instruction`.
-        """
         instr = self.command_memory[self.program_counter]
 
         argue = self.command_memory[self.program_counter + 0x1:self.program_counter + 0x5]
 
         opcode = binary_to_opcode[instr]
         self.debug_print(opcode, argue)
+
 
         if opcode is Opcode.HALT:
             raise StopIteration()
@@ -648,33 +710,223 @@ class ControlUnit:
             self.tick()
             return
 
-    def debug_print(self, instruction, arg):
-        top = 0
-        second = 0
-        r_top = 0
-        bytes = [arg[3], arg[2], arg[1], arg[0]]
-        int_atg = int.from_bytes(bytes, byteorder='little', signed=True) #пасхалка
-        try:
-            top = self.data_path.stack[-1]
-        except IndexError:
-            pass
-        try:
-            second = self.data_path.stack[-2]
-        except IndexError:
-            pass
-        try:
-            r_top = self.data_path.return_stack[-1]
-        except IndexError:
-            pass
+        if opcode is Opcode.ALOAD:
+            if self.step == 0:
+                self.data_path.signal_latch_addres_register(True)
+                self.step += 1
+                self.tick()
+                return
+            if self.step == 1:
+                val = self.data_path.read_from_memory()
+                self.data_path.stack_push(False, False, False, comm_value=val)
+                self.step = 0
+                self.signal_latch_program_counter(False, False)
+                self.tick()
+                return
+        if opcode is Opcode.ALOADP:
+            if self.step == 0:
+
+                self.data_path.signal_latch_addres_register(True)
+                self.step += 1
+                self.tick()
+                return
+
+            if self.step == 1:
+
+                val = self.data_path.read_from_memory()
+                self.data_path.stack_push(False, False, False, comm_value=val)
+                self.step += 1
+                self.tick()
+                return
+
+            if self.step == 2:
+
+                self.data_path.register_a += 1
+
+                self.step = 0
+                self.signal_latch_program_counter(False, False)  # PC += 1
+                self.tick()
+                return
+        if opcode is Opcode.IRET:
+            if self.step == 0:
+                sr = self.data_path.return_stack.pop()
+                self.data_path.ALU.set_status(sr)
+
+                self.step += 1
+                self.tick()
+                return
+            if self.step == 1:
+                self.signal_latch_program_counter(True, True)  # RS -> PC
+                self.IE = True
+                self.in_interrupt = False
+                self.step = 0
+                self.tick()
+                return
+
+        if opcode is Opcode.IRET:
+            if self.step == 0:
+                sr = self.data_path.return_stack.pop()
+                self.data_path.ALU.set_status(sr)
+                self.step += 1
+                self.tick()
+                return
+            if self.step == 1:
+                self.signal_latch_program_counter(True, True)  # RS -> PC
+                self.IE = True
+                self.in_interrupt = False
+                self.step = 0
+                self.tick()
+                return
+        if opcode is Opcode.EI:
+            self.IE = True
+            self.signal_latch_program_counter(False, False)
+            self.tick()
+            return
+
+        if opcode is Opcode.DI:
+            self.IE = False
+            self.signal_latch_program_counter(False, False)
+            self.tick()
+            return
+        if opcode is Opcode.NIF:
+            if self.step == 0:
+                self.data_path.signal_set_left_ALU(True)
+                self.data_path.ALU.pass_through()
+                self.step += 1
+                self.tick()
+                return
+
+            if self.step == 1:
+                value = int.from_bytes(argue, byteorder='big', signed=False)
+                if not self.data_path.ALU.flag_z:
+                    self.signal_latch_program_counter(True, False, value)
+                else:
+                    self.signal_latch_program_counter(False, True)
+                self.step = 0
+                self.tick()
+                return
+        if opcode is Opcode.ASTORE:
+            if self.step == 0:
+                self.data_path.signal_latch_addres_register(True)
+                self.step += 1
+                self.tick()
+                return
+            if self.step == 1:
+                self.data_path.write_to_memory()
+                self.step = 0
+                self.signal_latch_program_counter(False, False)
+                self.tick()
+                return
+        if opcode is Opcode.MUL:
+            if self.step == 0:
+                self.data_path.signal_set_left_ALU(True)
+                self.data_path.signal_set_right_ALU(True)
+                self.data_path.ALU.mul()
+                self.step += 1
+                self.tick()
+                return
+            if self.step == 1:
+                self.data_path.stack_push(False, True, False)
+                self.step = 0
+                self.signal_latch_program_counter(False, False)
+                self.tick()
+                return
+
+        if opcode is Opcode.DIV:
+            if self.step == 0:
+                self.data_path.signal_set_left_ALU(True)
+                self.data_path.signal_set_right_ALU(True)
+                self.data_path.ALU.div()
+                self.step += 1
+                self.tick()
+                return
+            if self.step == 1:
+                self.data_path.stack_push(False, True, False)
+                self.step = 0
+                self.signal_latch_program_counter(False, False)
+                self.tick()
+                return
+
+        if opcode is Opcode.MOD:
+            if self.step == 0:
+                self.data_path.signal_set_left_ALU(True)
+                self.data_path.signal_set_right_ALU(True)
+                self.data_path.ALU.mod()
+                self.step += 1
+                self.tick()
+                return
+            if self.step == 1:
+                self.data_path.stack_push(False, True, False)
+                self.step = 0
+                self.signal_latch_program_counter(False, False)
+                self.tick()
+                return
+
+
+
+    def debug_print_interrupt(self, action):
+        flags_str = f"{int(self.data_path.ALU.flag_n)}{int(self.data_path.ALU.flag_z)}"
+        ei_bit = 1 if self.IE else 0
+        intr_bit = 1 if self.pending_interrupt else 0
+        in_intr_bit = 1 if self.in_interrupt else 0
+
+        data_stack_snapshot = list(self.data_path.stack)
+        return_stack_snapshot = list(self.data_path.return_stack)
+        output_snapshot = list(self.data_path.output_buffer)
+
         print(
-            f"Program counter: {self.program_counter}, reg_A: {self.data_path.register_a}, reg_B {self.data_path.register_b}\n"
-            f"Stack top: {top}, stack second: {second} r_stack top : {r_top}\n"
-            f"Current tick: {self.current_tick() + 1}, current step = {self.step}, {not self.step}\n"
-            f"Current command: {instruction.__str__()}, current argument = {int_atg}\n"
-            f"<address> - <HEXCODE> - <mnemonic>\n"
-            f"{self.program_counter} - {(opcode_to_binary.get(instruction)):02x}{(int_atg):08x} - <mnemonic>\n"
-            f"кусочек памяти - {self.data_path.data_memory[:32]}\n"
-            f"----------Состояние регистров и памяти на начало такта!----------\n")
+            f"TICK: {self.current_tick():04d} | "
+            f"PC: {self.program_counter:04d} | "
+            f"STEP: {self.int_step} | "
+            f"IR: ---- ({action}) | "
+            f"NZ: {flags_str} | "
+            f"EI: {ei_bit} | "
+            f"IS INTR: {intr_bit} | "
+            f"IN INTR: {in_intr_bit} | "
+            f"DS: {data_stack_snapshot} | "
+            f"RS: {return_stack_snapshot} | "
+            f"OUT: {output_snapshot}"
+        )
+
+    def debug_print(self, instruction, arg):
+
+        flags_str = f"{int(self.data_path.ALU.flag_n)}{int(self.data_path.ALU.flag_z)}"
+
+
+        ei_bit = 1 if self.IE else 0
+        intr_bit = 1 if self.pending_interrupt else 0
+        in_intr_bit = 1 if self.in_interrupt else 0
+
+
+        int_arg = int.from_bytes(arg, byteorder='big', signed=True)
+
+        if instruction in [Opcode.LIT, Opcode.LOAD, Opcode.STORE, Opcode.JMP, Opcode.IF, Opcode.MIF, Opcode.CALL]:
+            ir_mnemonic = f"{instruction.value} {int_arg}"
+        else:
+            ir_mnemonic = f"{instruction.value}"
+
+
+        ir_hex = f"0x{opcode_to_binary.get(instruction, 0):02x}"
+
+
+        data_stack_snapshot = list(self.data_path.stack)
+        return_stack_snapshot = list(self.data_path.return_stack)
+        output_snapshot = list(self.data_path.output_buffer)
+
+
+        print(
+            f"TICK: {self.current_tick():04d} | "
+            f"PC: {self.program_counter:04d} | "
+            f"STEP: {self.step} | "
+            f"IR: {ir_hex} ({ir_mnemonic}) | "
+            f"NZ: {flags_str} | "
+            f"EI: {ei_bit} | "
+            f"IS INTR: {intr_bit} | "
+            f"IN INTR: {in_intr_bit} | "
+            f"DS: {data_stack_snapshot} | "
+            f"RS: {return_stack_snapshot} | "
+            f"OUT: {output_snapshot}"
+        )
 
 
 def run_cpu(code_file, input_file, config_file):
@@ -687,61 +939,89 @@ def run_cpu(code_file, input_file, config_file):
     in_port = config["input_port"]
     out_port = config["output_port"]
     entry_point = config["entry_point"]
+    data_image = config.get("data_image", {})
 
     with open(code_file, "rb") as f:
         binary_code = f.read()
 
+    input_text = ""
+    input_schedule = []
+    if input_file:
+        try:
+            with open(input_file, "r", encoding="utf-8") as f:
+                input_text = f.read()
+        except FileNotFoundError:
+            pass
 
-    try:
-        with open(input_file, "r", encoding="utf-8") as f:
-            input_text = f.read()
-    except FileNotFoundError:
-        input_text = ""
+        try:
+            with open(input_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line_cleared = line.rstrip("\r\n")
+                    if line_cleared.strip():
+                        parts = line_cleared.split(maxsplit=1)
+                        if len(parts) == 2:
+                            tick_str, char_val = parts
+                            input_schedule.append((int(tick_str), char_val))
+                        elif len(parts) == 1 and line_cleared[-1] == " ":
 
+                            input_schedule.append((int(parts[0]), " "))
+        except FileNotFoundError:
+            pass
+
+    input_schedule.sort(key=lambda x: x[0])
 
     alu = ALU()
     dp = DataPath(data_mem_size, alu, in_port, out_port, input_text)
-    cu = ControlUnit(cmd_mem_size, dp, entry_point=entry_point)
+    cu = ControlUnit(cmd_mem_size, dp, entry_point=entry_point,  input_schedule=input_schedule)
 
+    for addr_str, val in data_image.items():
+        dp.data_memory[int(addr_str)] = val
 
     for i in range(len(binary_code)):
         cu.command_memory[i] = binary_code[i]
 
-    print("=== ЗАПУСК СИМУЛЯЦИИ ===")
+    print("+++ ВО ИМЯ ОМНИССИИ: ЗАПУСК СВЯЩЕННОЙ СИМУЛЯЦИИ +++")
     try:
 
-        limit = 100000
+        limit = 50000000
         while cu.current_tick() < limit:
             cu.process_next_tick()
-        print("Внимание: достигнут лимит тактов!")
+        print("ЕРЕСЬ! Превышен лимит тактов. Дух Машины разгневан, логика осквернена!")
     except StopIteration:
-        print("Остановка: выполнена инструкция HALT.")
+        print("+++ РИТУАЛ ЗАВЕРШЕН: Выполнена священная команда HALT. Дух Машины упокоен благовониями. +++")
     except EOFError as e:
-        print(f"Остановка: {e}")
+        print(f"Священный источник данных иссяк. Поток прерван.{e}")
 
 
-    print("\n==============================")
-    print("ВЫВОД ПРОГРАММЫ:")
+    print("\n================================================================")
+    print("СВЯЩЕННЫЕ ПЛОДЫ ВЫЧИСЛЕНИЙ (ВЫВОД МЕХАНИЗМА):")
     for i in dp.output_buffer:
-        print(i, end=" ")
+        print(i, end=", ")
     print()
-    print("==============================")
-    print(f"Затрачено тактов: {cu.current_tick()}")
-
-
+    print("\n================================================================")
+    print(f"+++ Жертвенные такты Омниссии: {cu.current_tick()} +++")
+    print("[ПРОЦЕДУРА]%ВЫВОД ПАМЯТИ%")
+    print(dp.data_memory[:50])
+    print("+++ Нет истины в плоти, только в стали. Да славится Бог-Машина! +++")
+    input()
 def main():
 
     if len(sys.argv) == 4:
         code_file = sys.argv[1]
         input_file = sys.argv[2]
         config_file = sys.argv[3]
+        run_cpu(code_file, input_file, config_file)
+    elif len(sys.argv) == 3:
+        code_file = sys.argv[1]
+        config_file = sys.argv[2]
+        run_cpu(code_file, None, config_file)
     else:
 
-        code_file = "program.bin"
-        input_file = "input.txt"
-        config_file = "config.json"
+        code_file = "input.bin"
+        input_file = "shedule.txt"
+        config_file = "input_config.json"
+        run_cpu(code_file, input_file, config_file)
 
-    run_cpu(code_file, input_file, config_file)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,18 @@
+{
+    "input_port": 31998,
+    "output_port": 31999,
+    "data_memory_size": 32000,
+    "command_memory_size": 32000,
+    "entry_point": 80,
+    "trap_point": 0,
+    "data_image": {
+        "0": 0,
+        "1": 2000000000,
+        "2": 0,
+        "3": 2000000000,
+        "4": 0,
+        "5": 0,
+        "6": 2147483647,
+        "7": 0
+    }
+}

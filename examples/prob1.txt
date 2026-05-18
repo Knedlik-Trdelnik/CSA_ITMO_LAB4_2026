@@ -1,0 +1,57 @@
+цело max_pal = 0;
+цело a = 999;
+цело b = 0;
+цело prod = 0;
+цело temp = 0;
+цело rev = 0;
+цело rem = 0;
+цело keep_going = 1;
+
+main;
+di;
+
+while ( a > 99 );
+    b = a;
+    keep_going = 1;
+
+    while ( keep_going > 0 );
+        prod = a * b;
+
+
+        ; нет смысла уменьшать b дальше. Выходим из цикла.
+        if ( max_pal > prod );
+            keep_going = 0;
+        if-end;
+
+        if ( max_pal == prod );
+            keep_going = 0;
+        if-end;
+
+        if ( keep_going > 0 );
+            temp = prod;
+            rev = 0;
+
+            while ( temp > 0 );
+                rem = temp % 10;
+                rev = rev * 10 + rem;
+                temp = temp : 10;
+            while-end;
+
+            if ( rev == prod );
+                max_pal = prod;
+            if-end;
+        if-end;
+
+        b = b - 1;
+
+        if ( 100 > b );
+            keep_going = 0;
+        if-end;
+
+    while-end;
+
+    a = a - 1;
+while-end;
+
+пиши_память( max_pal );
+main-end;

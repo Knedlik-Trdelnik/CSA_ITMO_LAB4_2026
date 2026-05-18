@@ -17,6 +17,7 @@ class Opcode(str, Enum):
     ADD = "add"
     MUL = "mul"
     DIV = "div"
+    MOD = "mod"
 
     LIT = "literal"
     TOA = "stack_to_a"
@@ -50,6 +51,13 @@ class Opcode(str, Enum):
 
     RINTOT = "r_to_top"
     TINTOR = "top_to_r"
+
+    ALOADP = "a_store_+"
+
+    IRET = "iret"
+    EI = "ei"
+    DI = "di"
+    NIF = "nif"
 
     HALT = "halt"
 
@@ -100,8 +108,14 @@ opcode_to_binary = {
     Opcode.RINTOT: 0x1D,  # +
     Opcode.TINTOR: 0x1E,  # +
 
-    Opcode.JMP: 0x20,
 
+    Opcode.JMP: 0x20,
+    Opcode.ALOADP: 0x21,
+    Opcode.IRET: 0x22,
+    Opcode.EI: 0x23,
+    Opcode.DI: 0x24,
+    Opcode.NIF: 0x25,
+Opcode.MOD: 0x26,
     Opcode.HALT: 0xFF,  # +
 }
 
@@ -147,11 +161,14 @@ binary_to_opcode = {
     0x1F: Opcode.STORE,
 
     0x20: Opcode.JMP,
-
+    0x21: Opcode.ALOADP,
+    0x22: Opcode.IRET,
+    0x23: Opcode.EI,
+    0x24: Opcode.DI,
+    0x25: Opcode.NIF,
+    0x26: Opcode.MOD,
     0xFF: Opcode.HALT,
 }
-
-
 
 
 def to_bytes(code):

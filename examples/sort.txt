@@ -1,0 +1,45 @@
+цело swapped = 1;
+цело curr = 0;
+цело next = 0;
+цело v1 = 0;
+цело v2 = 0;
+цело keep_going = 1;
+
+main;
+di;
+грамота arr = "edcba";
+
+while ( swapped > 0 );
+    swapped = 0;
+    curr = arr;
+    keep_going = 1;
+
+    while ( keep_going > 0 );
+        next = curr + 1;
+
+        v1 = читай_адрес(curr);
+        v2 = читай_адрес(next);
+
+        ; Если следующий символ 0 (конец массива), останавливаем внутренний цикл
+        if ( v2 == 0 );
+            keep_going = 0;
+        if-end;
+
+        ; Если мы еще не в конце, проверяем, нужно ли менять местами
+        if ( v2 > 0 );
+            if ( v1 > v2 );
+                ; Меняем местами (swap)
+                пиши_адрес( curr , v2 );
+                пиши_адрес( next , v1 );
+                swapped = 1;
+            if-end;
+
+            curr = curr + 1;
+        if-end;
+    while-end;
+while-end;
+
+
+пиши_строку( arr );
+пиши_память( 10 );
+main-end;
