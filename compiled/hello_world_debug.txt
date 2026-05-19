@@ -1,11 +1,11 @@
 ---------data_memory_pos-32-bit---
-0x00-0x0d - String: "Hello, World!" (ASCII: 72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33, 0) | Указатель на начало: 0 (0x00)
-0x0e      - Переменная 's' (цело) расположен на 0x0e
+0x01-0x0e - String: "Hello, World!" (ASCII: 72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33, 0) | Указатель на начало: 1 (0x01)
+0x0f      - Переменная 's' (цело) расположен на 0x0f
 ---------command_memory---8-bit---
 <address> - <HEXCODE> - <mnemonic>
-0x00-0x04 - 0x0600000000 - lit: stack.push(addr of 'Hello, World!')
-0x05-0x09 - 0x1f0000000e - store: mem[14] <- stack.pop()
-0x0a-0x0e - 0x0f0000000e - load: stack.push(mem[14]))
+0x00-0x04 - 0x0600000001 - lit: stack.push(addr of 'Hello, World!')
+0x05-0x09 - 0x1f0000000f - store: mem[15] <- stack.pop()
+0x0a-0x0e - 0x0f0000000f - load: stack.push(mem[15]))
 0x0f - 0x07 - toa
 0x10 - 0x21 - aloadp (@+)
 0x11 - 0x17 - dup

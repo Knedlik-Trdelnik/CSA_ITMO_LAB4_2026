@@ -4,9 +4,9 @@
     "data_memory_size": 32000,
     "command_memory_size": 32000,
     "entry_point": 57,
-    "trap_point": 10,
     "data_image": {
-        "0": 1,
-        "1": 0
+        "0": 10,
+        "1": 1,
+        "2": 0
     }
 }

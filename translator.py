@@ -5,12 +5,11 @@ import re
 import sys
 import random
 
-
 from isa import Opcode, opcode_to_binary, binary_to_opcode
-
 
 INPUT_PORT_ADDR = 31998
 OUTPUT_PORT_ADDR = 31999
+
 
 class Expression(ABC):
     global context
@@ -21,6 +20,10 @@ class Expression(ABC):
 
     @abstractmethod
     def execute(self):
+        pass
+
+    @abstractmethod
+    def print_ast(self, level=0):
         pass
 
 
@@ -40,6 +43,9 @@ class Number(Expression):
         context.byte_code.extend(val.to_bytes(4, byteorder='big'))
         context.inc_comm_memory_pos(5)
 
+    def print_ast(self, level=0):
+        return "  " * level + f"Number({self.number})\n"
+
 
 class Variable(Expression):
     def __init__(self, name: str):
@@ -57,6 +63,9 @@ class Variable(Expression):
         context.byte_code.append(opcode_to_binary[Opcode.LOAD])
         context.byte_code.extend(addr.to_bytes(4, byteorder='big'))
         context.inc_comm_memory_pos(5)
+
+    def print_ast(self, level=0):
+        return "  " * level + f"Variable('{self.name}')\n"
 
 
 class ReadAddress(Expression):
@@ -76,8 +85,10 @@ class ReadAddress(Expression):
         context.byte_code.append(opcode_to_binary[Opcode.ALOAD])  # Читаем память по адресу в A на стек
         context.inc_comm_memory_pos(1)
 
-
-
+    def print_ast(self, level=0):
+        res = "  " * level + "ReadAddress:\n"
+        res += self.addr_expr.print_ast(level + 1)
+        return res
 
 
 class Add(Expression):
@@ -95,6 +106,9 @@ class Add(Expression):
         context.byte_code.append(opcode_to_binary[Opcode.ADD])
         context.inc_comm_memory_pos(1)
 
+    def print_ast(self, level=0):
+        return "  " * level + "Add:\n" + self.left.print_ast(level + 1) + self.right.print_ast(level + 1)
+
 
 class Sub(Expression):
     def __init__(self, left=None, right=None):
@@ -110,6 +124,9 @@ class Sub(Expression):
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.SUB]):02x} - sub: \tstack.pop()\tstack.pop()stack.push(stack.top-stack.second]))\n"
         context.byte_code.append(opcode_to_binary[Opcode.SUB])
         context.inc_comm_memory_pos(1)
+
+    def print_ast(self, level=0):
+        return "  " * level + "Sub:\n" + self.left.print_ast(level + 1) + self.right.print_ast(level + 1)
 
 
 class Mul(Expression):
@@ -127,6 +144,9 @@ class Mul(Expression):
         context.byte_code.append(opcode_to_binary[Opcode.MUL])
         context.inc_comm_memory_pos(1)
 
+    def print_ast(self, level=0):
+        return "  " * level + "Mul:\n" + self.left.print_ast(level + 1) + self.right.print_ast(level + 1)
+
 
 class Div(Expression):
     def __init__(self, left=None, right=None):
@@ -142,6 +162,9 @@ class Div(Expression):
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.DIV]):02x} - div\n"
         context.byte_code.append(opcode_to_binary[Opcode.DIV])
         context.inc_comm_memory_pos(1)
+
+    def print_ast(self, level=0):
+        return "  " * level + "Div:\n" + self.left.print_ast(level + 1) + self.right.print_ast(level + 1)
 
 
 class Eq(Expression):
@@ -159,6 +182,9 @@ class Eq(Expression):
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.MOD]):02x} - mod\n"
         context.byte_code.append(opcode_to_binary[Opcode.MOD])
         context.inc_comm_memory_pos(1)
+
+    def print_ast(self, level=0):
+        return "  " * level + "Mod (%):\n" + self.left.print_ast(level + 1) + self.right.print_ast(level + 1)
 
 
 class Greater(Expression):
@@ -178,6 +204,9 @@ class Greater(Expression):
         context.byte_code.append(opcode_to_binary[Opcode.SUB])
         context.inc_comm_memory_pos(1)
 
+    def print_ast(self, level=0):
+        return "  " * level + "Greater (>):\n" + self.left.print_ast(level + 1) + self.right.print_ast(level + 1)
+
 
 class Less(Expression):
     def __init__(self, left=None, right=None):
@@ -195,6 +224,9 @@ class Less(Expression):
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.SUB]):02x} - sub (stack.top-stack.second)\n"
         context.byte_code.append(opcode_to_binary[Opcode.SUB])
         context.inc_comm_memory_pos(1)
+
+    def print_ast(self, level=0):
+        return "  " * level + "Less (<):\n" + self.left.print_ast(level + 1) + self.right.print_ast(level + 1)
 
 
 class Equal(Expression):
@@ -214,6 +246,10 @@ class Equal(Expression):
         context.byte_code.append(opcode_to_binary[Opcode.SUB])
         context.inc_comm_memory_pos(1)
 
+    def print_ast(self, level=0):
+        return "  " * level + "Equal (==):\n" + self.left.print_ast(level + 1) + self.right.print_ast(level + 1)
+
+
 class StringLiteral(Expression):
     def __init__(self, text: str):
         self.text = text
@@ -230,6 +266,10 @@ class StringLiteral(Expression):
         context.byte_code.extend(self.addr.to_bytes(4, byteorder='big'))
         context.inc_comm_memory_pos(5)
 
+    def print_ast(self, level=0):
+        return "  " * level + f"StringLiteral(\"{self.text}\")\n"
+
+
 class Context:
     data_memory_pos = 1  # на дата-мемори указатель  ( свободная ячейка) 32 бита
     comm_memory_pos = 0  # указатель  на дата-мемори( свободная ячейка) 8 бит
@@ -241,7 +281,6 @@ class Context:
     output2st = "---------command_memory---8-bit---\n<address> - <HEXCODE> - <mnemonic>\n"
     byte_code = bytearray()
     entry_point = 0
-
 
     def saveStringData(self, text):
         addr = self.data_memory_pos
@@ -302,11 +341,21 @@ class Statement(ABC):
     def execute(self):
         pass
 
+    @abstractmethod
+    def print_ast(self, level=0):
+        pass
+
 
 class Program(Statement):
     def execute(self):
         for _ in self.statement_list:
             _.execute()
+
+    def print_ast(self, level=0):
+        res = "AST (Абстрактное Синтаксическое Дерево):\n"
+        for stmt in self.statement_list:
+            res += stmt.print_ast(level + 1)
+        return res
 
 
 class Entry_Point(Statement):
@@ -322,6 +371,13 @@ class Entry_Point(Statement):
 
         for _ in self.statement_list:
             _.execute()
+
+    def print_ast(self, level=0):
+        name = "TRAP HANDLER" if self.is_trap else "MAIN"
+        res = "  " * level + f"Block [{name}]:\n"
+        for stmt in self.statement_list:
+            res += stmt.print_ast(level + 1)
+        return res
 
 
 class Variable_Declaration(Statement):
@@ -343,6 +399,11 @@ class Variable_Declaration(Statement):
             context.byte_code.append(opcode_to_binary[Opcode.STORE])
             context.byte_code.extend(addr.to_bytes(4, byteorder='big'))
             context.inc_comm_memory_pos(5)
+
+    def print_ast(self, level=0):
+        res = "  " * level + f"Declaration (type: {self.type}, var: '{self.name}'):\n"
+        res += self.value.print_ast(level + 1)
+        return res
 
 
 class Assignment(Statement):
@@ -367,10 +428,13 @@ class Assignment(Statement):
                 context.byte_code.append(opcode_to_binary[Opcode.STORE])
                 context.byte_code.extend(addr.to_bytes(4, byteorder='big'))
                 context.inc_comm_memory_pos(5)
-            elif var_type == "долгоцело":
-                pass
             elif var_type == "грамота":
                 pass
+
+    def print_ast(self, level=0):
+        res = "  " * level + f"Assignment (var: '{self.name}'):\n"
+        res += self.value.print_ast(level + 1)
+        return res
 
 
 class Halt(Statement):
@@ -378,6 +442,9 @@ class Halt(Statement):
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.HALT]):02x} - halt\n"
         context.byte_code.append(opcode_to_binary[Opcode.HALT])
         context.inc_comm_memory_pos(1)
+
+    def print_ast(self, level=0):
+        return "  " * level + "Halt\n"
 
 
 class If(Statement):
@@ -415,6 +482,15 @@ class If(Statement):
         end_addr = context.comm_memory_pos
         context.output2st = context.output2st.replace(end_label, str(f"{end_addr:08x}"))
         context.byte_code[patch_idx: patch_idx + 4] = (end_addr & 0xFFFFFFFF).to_bytes(4, byteorder='big')
+
+    def print_ast(self, level=0):
+        res = "  " * level + "If statement:\n"
+        res += "  " * (level + 1) + "- Condition:\n"
+        res += self.condition.print_ast(level + 2)
+        res += "  " * (level + 1) + "- Body:\n"
+        for stmt in self.statement_list:
+            res += stmt.print_ast(level + 2)
+        return res
 
 
 class While(Statement):
@@ -459,6 +535,15 @@ class While(Statement):
         end_addr = context.comm_memory_pos
         context.output2st = context.output2st.replace(end_label, str(f"{end_addr:08x}"))
         context.byte_code[patch_idx: patch_idx + 4] = (end_addr & 0xFFFFFFFF).to_bytes(4, byteorder='big')
+
+    def print_ast(self, level=0):
+        res = "  " * level + "While loop:\n"
+        res += "  " * (level + 1) + "- Condition:\n"
+        res += self.condition.print_ast(level + 2)
+        res += "  " * (level + 1) + "- Body:\n"
+        for stmt in self.statement_list:
+            res += stmt.print_ast(level + 2)
+        return res
 
 
 class For(Statement):
@@ -524,6 +609,11 @@ class Output(Statement):
         context.byte_code.extend(OUTPUT_PORT_ADDR.to_bytes(4, byteorder='big'))
         context.inc_comm_memory_pos(5)
 
+    def print_ast(self, level=0):
+        res = "  " * level + "Output (пиши_память):\n"
+        res += self.value.print_ast(level + 1)
+        return res
+
 
 class Input(Expression):
     def interpret(self):
@@ -534,6 +624,9 @@ class Input(Expression):
         context.byte_code.append(opcode_to_binary[Opcode.LOAD])
         context.byte_code.extend(INPUT_PORT_ADDR.to_bytes(4, byteorder='big'))
         context.inc_comm_memory_pos(5)
+
+    def print_ast(self, level=0):
+        return "  " * level + "Input (читай_память)\n"
 
 
 class PrintString(Statement):
@@ -575,23 +668,37 @@ class PrintString(Statement):
         context.output2st = context.output2st.replace(end_label, str(f"{end_addr:08x}"))
         context.byte_code[patch_idx: patch_idx + 4] = (end_addr & 0xFFFFFFFF).to_bytes(4, byteorder='big')
 
+    def print_ast(self, level=0):
+        res = "  " * level + "PrintString (пиши_строку):\n"
+        res += self.value.print_ast(level + 1)
+        return res
 
 class IRetStatement(Statement):
     def execute(self):
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.IRET]):02x} - iret (возврат из прерывания)\n"
         context.byte_code.append(opcode_to_binary[Opcode.IRET])
         context.inc_comm_memory_pos(1)
+
+    def print_ast(self, level=0):
+        return "  " * level + "IRetStatement (trap-end)\n"
+
 class EIStatement(Statement):
     def execute(self):
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.EI]):02x} - ei (разрешить прерывания)\n"
         context.byte_code.append(opcode_to_binary[Opcode.EI])
         context.inc_comm_memory_pos(1)
 
+    def print_ast(self, level=0):
+        return "  " * level + "Enable Interrupts (ei)\n"
+
 class DIStatement(Statement):
     def execute(self):
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.DI]):02x} - di (запретить прерывания)\n"
         context.byte_code.append(opcode_to_binary[Opcode.DI])
         context.inc_comm_memory_pos(1)
+
+    def print_ast(self, level=0):
+        return "  " * level + "Disable Interrupts (di)\n"
 
 class WriteAddress(Statement):
     def __init__(self, addr_expr: Expression, val_expr: Expression):
@@ -608,6 +715,14 @@ class WriteAddress(Statement):
         context.output2st += f"0x{context.comm_memory_pos:02x} - 0x{(opcode_to_binary[Opcode.ASTORE]):02x} - astore\n"
         context.byte_code.append(opcode_to_binary[Opcode.ASTORE])
         context.inc_comm_memory_pos(1)
+
+    def print_ast(self, level=0):
+        res = "  " * level + "WriteAddress (пиши_адрес):\n"
+        res += "  " * (level + 1) + "- Address:\n"
+        res += self.addr_expr.print_ast(level + 2)
+        res += "  " * (level + 1) + "- Value:\n"
+        res += self.val_expr.print_ast(level + 2)
+        return res
 
 math_op = {"*", "+", "-", ":", "%"}
 high_op = {"*", ":", "%"}
@@ -692,11 +807,9 @@ def parse_epression(expression, isRecursion=False):
     else:
         tokens = expression
 
-
     while check_next_highest_op(tokens):
         first_index, second_index = check_next_highest_op(tokens)
         subtokens = tokens[first_index + 1:second_index]
-
 
         subexspression = parse_epression(subtokens, True)
         tokens[first_index:second_index + 1] = " "
@@ -832,7 +945,6 @@ def translate(file):
     statement_stack = []
     statement_stack.append(program)
 
-
     for line in file:
         if line == "\n" or line.strip() == "":
             continue
@@ -849,7 +961,6 @@ def translate(file):
             continue
 
         if tokens[0] == "main":
-
 
             main_block = Entry_Point()
             statement_stack.append(main_block)
@@ -963,6 +1074,8 @@ def translate(file):
             st.value = parse_epression(tokens[2::], True)
             statement_stack[-1].statement_list.append(st)
 
+    ast_output = statement_stack[0].print_ast()
+    print(ast_output)
     statement_stack.pop().execute()
 
     final_output = context.output1st + context.output2st
@@ -974,33 +1087,27 @@ def to_bytes(code):
 
 
 def makeShedule(input_text, filename="shedule.txt"):
-    current_tick = 0
+    current_tick = 500
     with open(filename, "w", encoding="utf-8") as f:
         for char in input_text:
-            step = random.randint(20, 40)
+            step = 40
             current_tick += step
             f.write(f"{current_tick} {char}\n")
-        f.write(f"{current_tick+ random.randint(3, 10)} {ord("\n")}\n")
-    print(f"+++ РАСПИСАНИЕ УСПЕШНО СФОРМИРОВАНО В {filename} +++")
-
-
-
+        current_tick += 40
+        f.write(f"{current_tick } {ord('\n')}\n")
+    print(f"Расписание ввода сохранено в: {filename}")
 
 
 def main(source="input"):
-
     with open(f"{source}.txt", encoding="utf-8") as f_debug:
         code = translate(f_debug)
-
 
     output_dir = "compiled"
     os.makedirs(output_dir, exist_ok=True)
 
-
     file_name = os.path.basename(source)
 
     target_path = os.path.join(output_dir, file_name)
-
 
     with open(f"{target_path}_debug.txt", "w", encoding="utf-8") as f:
         f.write(code)
@@ -1022,17 +1129,17 @@ def main(source="input"):
     with open(f"{target_path}_config.json", "w", encoding="utf-8") as f:
         json.dump(config, f, indent=4)
 
-    print("+++ РИТУАЛ ТРАНСЛЯЦИИ ЗАВЕРШЕН УСПЕХОМ +++")
-    print("[БЛАГОСЛОВЕНИЕ ОМНИССИИ ПОЛУЧЕНО]")
-    print(f"+++ Объем священной литании (Размер бинарного файла): {len(binary_data)} байт. +++")
-    print(f"+++ Дух Машины создал скрижаль конфигурации в: {target_path}_config.json +++")
+    print("Трансляция успешна")
 
-    print("[ЛОГ СВЯЩЕННОГО ГИМНА ОМНИССИИ ДЛЯ КОГИТАТОРА (ПОБАЙТОВОЕ ПРЕДСТАВЛЕНИЕ)]:")
+    print(f"Объем бинарника (Размер бинарного файла): {len(binary_data)} байт.")
+    print(f"Конфиг лежит в: {target_path}_config.json")
+
+    print("Байт-код:")
     cnt = 0
     for i in context.byte_code:
         print(f"{hex(cnt)[2:]}:{hex(i)[2:]}", end=" ")
         cnt += 1
-    print("\n+++ Поток данных чист. Код готов к слиянию с кремнием. +++")
+
 
 
 if __name__ == "__main__":

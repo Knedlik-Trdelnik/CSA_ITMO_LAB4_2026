@@ -116,7 +116,6 @@ class DataPath:
     stack = None
     "Стек...что еще сказать?"
 
-    stack_pointer = 0
 
     return_stack = None
     "Стек возврата...я все сказал"
@@ -133,13 +132,25 @@ class DataPath:
     register_b = None
     "Регистр В. Инициализируется нулём."
 
+    stack_size = 256
+    stack_pointer = 0
+
+    return_stack_size = 256
+    return_stack_pointer = 0
+
     ALU = None
 
     def __init__(self, data_memory_size, alu, input_port, output_port, input_data=""):
         self.data_memory_size = data_memory_size
         self.data_memory = [0] * data_memory_size
-        self.return_stack = []
-        self.stack = []
+
+
+        self.stack = [0] * self.stack_size
+        self.stack_pointer = 0
+
+        self.return_stack = [0] * self.return_stack_size
+        self.return_stack_pointer = 0
+
         self.address_register = 0
         self.register_a = 0
         self.register_b = 0
@@ -147,21 +158,18 @@ class DataPath:
 
         self.IO_INPUT_ADDR = input_port
         self.IO_OUTPUT_ADDR = output_port
-
-
         self.input_port_value = 0
         self.output_buffer = []
 
-
     def signal_set_a(self, stack_or_ALU):
-        if stack_or_ALU == True:
-            self.register_a = self.stack.pop()
+        if stack_or_ALU:
+            self.register_a = self.stack_pop()
         else:
             self.register_a = self.ALU.alu_output
 
     def signal_set_b(self, stack_or_ALU):
-        if stack_or_ALU == True:
-            self.register_b = self.stack.pop()
+        if stack_or_ALU:
+            self.register_b = self.stack_pop()
         else:
             self.register_b = self.ALU.alu_output
 
@@ -171,7 +179,7 @@ class DataPath:
         if addr == self.IO_INPUT_ADDR:
             val = self.input_port_value
             char_repr = chr(val) if 32 <= val <= 126 else f"\\x{val:02x}"
-            print(f"[I/O] Прочитан символ: '{char_repr}' (значение = {val})")
+
             return val
         elif addr == self.IO_OUTPUT_ADDR:
             raise KeyError("Cannot read from output!")
@@ -185,50 +193,87 @@ class DataPath:
         if addr == self.IO_OUTPUT_ADDR:
             char = chr(value & 0xFF)
             self.output_buffer.append(value)
-            print(f"[I/O] Выведен символ: '{char}' (значение =  {value})")
+
         elif addr == self.IO_INPUT_ADDR:
             raise KeyError("Cannot write to input!")
         else:
             self.data_memory[addr] = value
 
     def stack_pop(self):
-
-        return self.stack.pop()
+        """Аппаратное снятие со стека: сдвигаем указатель вниз и читаем память."""
+        if self.stack_pointer <= 0:
+            raise IndexError("Hardware Exception: Data Stack Underflow")
+        self.stack_pointer -= 1
+        return self.stack[self.stack_pointer]
 
     def stack_push(self, first_part, second_part, third_part, comm_value=0):
+        """Аппаратная загрузка на стек: пишем в память и сдвигаем указатель вверх."""
+        if self.stack_pointer >= self.stack_size:
+            raise IndexError("Hardware Exception: Data Stack Overflow")
+
+        val = 0
         if first_part and second_part and not third_part:  # 1 1 0 A->TOP
-            self.stack.append(self.register_a)
+            val = self.register_a
             self.register_a = 0
         elif first_part and not second_part and not third_part:  # 1 0 0 B->TOP
-            self.stack.append(self.register_b)
+            val = self.register_b
             self.register_b = 0
         elif not first_part and second_part and not third_part:  # 0 1 0 ALU->TOP
-            self.stack.append(self.ALU.alu_output)
+            val = self.ALU.alu_output
         elif not first_part and not second_part and not third_part:  # 0 0 0 MEM->TOP
-            self.stack.append(comm_value)
+            val = comm_value
         elif first_part and second_part and third_part:  # 1 1 1 COM_MEM->TOP
-            self.stack.append(comm_value)
+            val = comm_value
         elif first_part and not second_part and third_part:  # 1 0 1 R_STAK.POP->TOP
-            self.stack.append(self.return_stack_pop())
+            val = self.return_stack_pop()
+
+        self.stack[self.stack_pointer] = val
+        self.stack_pointer += 1
 
     def stack_dup(self):
-        self.stack.append(self.stack[-1])
+        """Копирование вершины стека."""
+        if self.stack_pointer <= 0 or self.stack_pointer >= self.stack_size:
+            raise IndexError("Hardware Exception: Stack Pointer Out of Bounds")
+        val = self.stack[self.stack_pointer - 1]
+        self.stack[self.stack_pointer] = val
+        self.stack_pointer += 1
 
-    # TODO: переписать на использование регистра B как буфера
     def stack_over(self):
-        top = self.stack.pop()
-        second = self.stack.pop()
-        self.stack.append(top)
-        self.stack.append(second)
+        """
+        Примечание: ваша предыдущая реализация работала как SWAP (меняла местами).
+        Я сохранил эту логику для совместимости с вашей программой.
+        """
+        top = self.stack_pop()
+        second = self.stack_pop()
+
+        self.stack[self.stack_pointer] = top
+        self.stack_pointer += 1
+        self.stack[self.stack_pointer] = second
+        self.stack_pointer += 1
+
 
     def return_stack_pop(self):
-        return self.return_stack.pop()
+        if self.return_stack_pointer <= 0:
+            raise IndexError("Hardware Exception: Return Stack Underflow")
+        self.return_stack_pointer -= 1
+        return self.return_stack[self.return_stack_pointer]
 
     def return_stack_push(self, from_PC=False, PC_VAL=0):
+        if self.return_stack_pointer >= self.return_stack_size:
+            raise IndexError("Hardware Exception: Return Stack Overflow")
         if not from_PC:
-            self.return_stack.append(self.stack.pop())
-            return
-        self.return_stack.append(PC_VAL)
+            val = self.stack_pop()
+        else:
+            val = PC_VAL
+        self.return_stack[self.return_stack_pointer] = val
+        self.return_stack_pointer += 1
+
+    def return_stack_push_raw(self, val):
+        """Служебный метод для сохранения флагов прерывания аппаратурой."""
+        if self.return_stack_pointer >= self.return_stack_size:
+            raise IndexError("Hardware Exception: Return Stack Overflow")
+        self.return_stack[self.return_stack_pointer] = val
+        self.return_stack_pointer += 1
 
     "Т.к. на входах в АЛУ у меня MUX, то и сигналы, собственно, должны поступать"
 
@@ -277,6 +322,7 @@ class ControlUnit:
     input_schedule = None
     entering_interrupt = None
     int_step = None
+    log_limit = 0
 
     def __init__(self, command_memory_size, data_path, entry_point=0,  input_schedule=None):
         self.command_memory_size = command_memory_size
@@ -286,6 +332,7 @@ class ControlUnit:
         self._tick = 0
         self.step = 0
 
+        self.log_limit = 100
         self.IE = True
         self.in_interrupt = False
         self.pending_interrupt = False
@@ -348,7 +395,7 @@ class ControlUnit:
                 return
             elif self.int_step == 1:
                 sr = self.data_path.ALU.get_status()
-                self.data_path.return_stack.append(sr)
+                self.data_path.return_stack_push_raw(sr)
                 self.debug_print_interrupt("INT ENTRY: PUSH SR -> RS")
                 self.int_step += 1
                 self.tick()
@@ -749,9 +796,10 @@ class ControlUnit:
                 return
         if opcode is Opcode.IRET:
             if self.step == 0:
-                sr = self.data_path.return_stack.pop()
-                self.data_path.ALU.set_status(sr)
 
+                sr = self.data_path.return_stack_pop()
+
+                self.data_path.ALU.set_status(sr)
                 self.step += 1
                 self.tick()
                 return
@@ -862,16 +910,16 @@ class ControlUnit:
                 self.tick()
                 return
 
-
-
     def debug_print_interrupt(self, action):
+        if self._tick > self.log_limit:
+            return
         flags_str = f"{int(self.data_path.ALU.flag_n)}{int(self.data_path.ALU.flag_z)}"
         ei_bit = 1 if self.IE else 0
         intr_bit = 1 if self.pending_interrupt else 0
         in_intr_bit = 1 if self.in_interrupt else 0
 
-        data_stack_snapshot = list(self.data_path.stack)
-        return_stack_snapshot = list(self.data_path.return_stack)
+        data_stack_snapshot = self.data_path.stack[:self.data_path.stack_pointer]
+        return_stack_snapshot = self.data_path.return_stack[:self.data_path.return_stack_pointer]
         output_snapshot = list(self.data_path.output_buffer)
 
         print(
@@ -889,7 +937,8 @@ class ControlUnit:
         )
 
     def debug_print(self, instruction, arg):
-
+        if self._tick > self.log_limit:
+            return
         flags_str = f"{int(self.data_path.ALU.flag_n)}{int(self.data_path.ALU.flag_z)}"
 
 
@@ -908,9 +957,8 @@ class ControlUnit:
 
         ir_hex = f"0x{opcode_to_binary.get(instruction, 0):02x}"
 
-
-        data_stack_snapshot = list(self.data_path.stack)
-        return_stack_snapshot = list(self.data_path.return_stack)
+        data_stack_snapshot = self.data_path.stack[:self.data_path.stack_pointer]
+        return_stack_snapshot = self.data_path.return_stack[:self.data_path.return_stack_pointer]
         output_snapshot = list(self.data_path.output_buffer)
 
 
@@ -980,30 +1028,36 @@ def run_cpu(code_file, input_file, config_file):
     for i in range(len(binary_code)):
         cu.command_memory[i] = binary_code[i]
 
-    print("+++ ВО ИМЯ ОМНИССИИ: ЗАПУСК СВЯЩЕННОЙ СИМУЛЯЦИИ +++")
+    print("=== Запуск симуляции ===")
     try:
-
         limit = 50000000
         while cu.current_tick() < limit:
             cu.process_next_tick()
-        print("ЕРЕСЬ! Превышен лимит тактов. Дух Машины разгневан, логика осквернена!")
+        print("Ошибка: Превышен лимит тактов (Infinite loop?).")
     except StopIteration:
-        print("+++ РИТУАЛ ЗАВЕРШЕН: Выполнена священная команда HALT. Дух Машины упокоен благовониями. +++")
+        print("=== Симуляция завершена (HALT) ===")
     except EOFError as e:
-        print(f"Священный источник данных иссяк. Поток прерван.{e}")
+        print(f"Ошибка ввода/вывода: {e}")
 
+    print("\n--- Буфер вывода ---")
 
-    print("\n================================================================")
-    print("СВЯЩЕННЫЕ ПЛОДЫ ВЫЧИСЛЕНИЙ (ВЫВОД МЕХАНИЗМА):")
-    for i in dp.output_buffer:
-        print(i, end=", ")
-    print()
-    print("\n================================================================")
-    print(f"+++ Жертвенные такты Омниссии: {cu.current_tick()} +++")
-    print("[ПРОЦЕДУРА]%ВЫВОД ПАМЯТИ%")
+    output_str = ""
+    for val in dp.output_buffer:
+        if val > 255:
+            output_str += str(val) + " "
+        elif 32 <= val <= 126 or val == 10:
+            output_str += chr(val)
+        else:
+            output_str += f"\\x{val:02x}"
+
+    print(output_str)
+
+    print(f"\nЗатрачено тактов: {cu.current_tick()}")
+    print("--- Дамп первых 50 ячеек Data Memory ---")
     print(dp.data_memory[:50])
-    print("+++ Нет истины в плоти, только в стали. Да славится Бог-Машина! +++")
-    input()
+
+
+
 def main():
 
     if len(sys.argv) == 4:

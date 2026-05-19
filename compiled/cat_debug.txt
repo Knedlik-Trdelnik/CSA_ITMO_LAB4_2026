@@ -1,24 +1,24 @@
 ---------data_memory_pos-32-bit---
-0x00      - Переменная 'is_running' (цело) расположен на 0x00
-0x01      - Переменная 'c' (цело) расположен на 0x01
+0x01      - Переменная 'is_running' (цело) расположен на 0x01
+0x02      - Переменная 'c' (цело) расположен на 0x02
 ---------command_memory---8-bit---
 <address> - <HEXCODE> - <mnemonic>
 0x00-0x04 - 0x0600000001 - lit: stack.push(1))
-0x05-0x09 - 0x1f00000000 - store: mem[0] <- stack.pop()
+0x05-0x09 - 0x1f00000001 - store: mem[1] <- stack.pop()
 0x0a-0x0e - 0x0f00007cfe - load: stack.push(mem[31998]) (ВВОД)
-0x0f-0x13 - 0x1f00000001 - store: mem[1] <- stack.pop()
-0x14-0x18 - 0x0f00000001 - load: stack.push(mem[1]))
+0x0f-0x13 - 0x1f00000002 - store: mem[2] <- stack.pop()
+0x14-0x18 - 0x0f00000002 - load: stack.push(mem[2]))
 0x19-0x1d - 0x060000000a - lit: stack.push(10))
 0x1e - 0x02 - sub: 	stack.pop()	stack.pop()	stack.push(stack.top-stack.second)
 0x1f-0x23 - 0x250000002e - jump to 0x0000002e if stack.pop == 0
 0x24-0x28 - 0x0600000000 - lit: stack.push(0))
-0x29-0x2d - 0x1f00000000 - store: mem[0] <- stack.pop()
-0x2e-0x32 - 0x0f00000001 - load: stack.push(mem[1]))
+0x29-0x2d - 0x1f00000001 - store: mem[1] <- stack.pop()
+0x2e-0x32 - 0x0f00000002 - load: stack.push(mem[2]))
 0x33-0x37 - 0x1f00007cff - store: mem[31999] <- stack.pop() (ВЫВОД)
 0x38 - 0x22 - iret (возврат из прерывания)
 0x39 - 0x23 - ei (разрешить прерывания)
 0x3a-0x3e - 0x0600000000 - lit: stack.push(0))
-0x3f-0x43 - 0x0f00000000 - load: stack.push(mem[0]))
+0x3f-0x43 - 0x0f00000001 - load: stack.push(mem[1]))
 0x44 - 0x02 - sub (stack.top-stack.second)
 0x45-0x49 - 0x1c0000004f - jump to 0x0000004f if stack.pop >= 0
 0x4a-0x4e  - 0x200000003a - jump to 0x0000003a

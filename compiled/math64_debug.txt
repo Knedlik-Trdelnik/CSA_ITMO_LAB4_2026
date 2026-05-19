@@ -1,75 +1,75 @@
 ---------data_memory_pos-32-bit---
-0x00      - Переменная 'a_high' (цело) расположен на 0x00
-0x01      - Переменная 'a_low' (цело) расположен на 0x01
-0x02      - Переменная 'b_high' (цело) расположен на 0x02
-0x03      - Переменная 'b_low' (цело) расположен на 0x03
-0x04      - Переменная 'res_high' (цело) расположен на 0x04
-0x05      - Переменная 'res_low' (цело) расположен на 0x05
-0x06      - Переменная 'limit' (цело) расположен на 0x06
-0x07      - Переменная 'diff' (цело) расположен на 0x07
+0x01      - Переменная 'a_high' (цело) расположен на 0x01
+0x02      - Переменная 'a_low' (цело) расположен на 0x02
+0x03      - Переменная 'b_high' (цело) расположен на 0x03
+0x04      - Переменная 'b_low' (цело) расположен на 0x04
+0x05      - Переменная 'res_high' (цело) расположен на 0x05
+0x06      - Переменная 'res_low' (цело) расположен на 0x06
+0x07      - Переменная 'limit' (цело) расположен на 0x07
+0x08      - Переменная 'diff' (цело) расположен на 0x08
 ---------command_memory---8-bit---
 <address> - <HEXCODE> - <mnemonic>
 0x00-0x04 - 0x0600000000 - lit: stack.push(0))
-0x05-0x09 - 0x1f00000000 - store: mem[0] <- stack.pop()
+0x05-0x09 - 0x1f00000001 - store: mem[1] <- stack.pop()
 0x0a-0x0e - 0x0677359400 - lit: stack.push(2000000000))
-0x0f-0x13 - 0x1f00000001 - store: mem[1] <- stack.pop()
+0x0f-0x13 - 0x1f00000002 - store: mem[2] <- stack.pop()
 0x14-0x18 - 0x0600000000 - lit: stack.push(0))
-0x19-0x1d - 0x1f00000002 - store: mem[2] <- stack.pop()
+0x19-0x1d - 0x1f00000003 - store: mem[3] <- stack.pop()
 0x1e-0x22 - 0x0677359400 - lit: stack.push(2000000000))
-0x23-0x27 - 0x1f00000003 - store: mem[3] <- stack.pop()
+0x23-0x27 - 0x1f00000004 - store: mem[4] <- stack.pop()
 0x28-0x2c - 0x0600000000 - lit: stack.push(0))
-0x2d-0x31 - 0x1f00000004 - store: mem[4] <- stack.pop()
+0x2d-0x31 - 0x1f00000005 - store: mem[5] <- stack.pop()
 0x32-0x36 - 0x0600000000 - lit: stack.push(0))
-0x37-0x3b - 0x1f00000005 - store: mem[5] <- stack.pop()
+0x37-0x3b - 0x1f00000006 - store: mem[6] <- stack.pop()
 0x3c-0x40 - 0x067fffffff - lit: stack.push(2147483647))
-0x41-0x45 - 0x1f00000006 - store: mem[6] <- stack.pop()
+0x41-0x45 - 0x1f00000007 - store: mem[7] <- stack.pop()
 0x46-0x4a - 0x0600000000 - lit: stack.push(0))
-0x4b-0x4f - 0x1f00000007 - store: mem[7] <- stack.pop()
+0x4b-0x4f - 0x1f00000008 - store: mem[8] <- stack.pop()
 0x50 - 0x24 - di (запретить прерывания)
-0x51-0x55 - 0x0f00000006 - load: stack.push(mem[6]))
-0x56-0x5a - 0x0f00000001 - load: stack.push(mem[1]))
+0x51-0x55 - 0x0f00000007 - load: stack.push(mem[7]))
+0x56-0x5a - 0x0f00000002 - load: stack.push(mem[2]))
 0x5b - 0x02 - sub: 	stack.pop()	stack.pop()stack.push(stack.top-stack.second]))
-0x5c-0x60 - 0x1f00000007 - store: mem[7] <- stack.pop()
-0x61-0x65 - 0x0f00000007 - load: stack.push(mem[7]))
-0x66-0x6a - 0x0f00000003 - load: stack.push(mem[3]))
+0x5c-0x60 - 0x1f00000008 - store: mem[8] <- stack.pop()
+0x61-0x65 - 0x0f00000008 - load: stack.push(mem[8]))
+0x66-0x6a - 0x0f00000004 - load: stack.push(mem[4]))
 0x6b - 0x02 - sub (stack.top-stack.second)
 0x6c-0x70 - 0x1c0000009d - jump to 0x0000009d if stack.pop >= 0
-0x71-0x75 - 0x0f00000000 - load: stack.push(mem[0]))
-0x76-0x7a - 0x0f00000002 - load: stack.push(mem[2]))
+0x71-0x75 - 0x0f00000001 - load: stack.push(mem[1]))
+0x76-0x7a - 0x0f00000003 - load: stack.push(mem[3]))
 0x7b - 0x03 - add: 	stack.pop()	stack.pop()	stack.push(stack.top+stack.second]))
 0x7c-0x80 - 0x0600000001 - lit: stack.push(1))
 0x81 - 0x03 - add: 	stack.pop()	stack.pop()	stack.push(stack.top+stack.second]))
-0x82-0x86 - 0x1f00000004 - store: mem[4] <- stack.pop()
-0x87-0x8b - 0x0f00000003 - load: stack.push(mem[3]))
-0x8c-0x90 - 0x0f00000007 - load: stack.push(mem[7]))
+0x82-0x86 - 0x1f00000005 - store: mem[5] <- stack.pop()
+0x87-0x8b - 0x0f00000004 - load: stack.push(mem[4]))
+0x8c-0x90 - 0x0f00000008 - load: stack.push(mem[8]))
 0x91 - 0x02 - sub: 	stack.pop()	stack.pop()stack.push(stack.top-stack.second]))
 0x92-0x96 - 0x0600000001 - lit: stack.push(1))
 0x97 - 0x02 - sub: 	stack.pop()	stack.pop()stack.push(stack.top-stack.second]))
-0x98-0x9c - 0x1f00000005 - store: mem[5] <- stack.pop()
-0x9d-0xa1 - 0x0f00000003 - load: stack.push(mem[3]))
-0xa2-0xa6 - 0x0f00000007 - load: stack.push(mem[7]))
+0x98-0x9c - 0x1f00000006 - store: mem[6] <- stack.pop()
+0x9d-0xa1 - 0x0f00000004 - load: stack.push(mem[4]))
+0xa2-0xa6 - 0x0f00000008 - load: stack.push(mem[8]))
 0xa7 - 0x02 - sub (stack.top-stack.second)
 0xa8-0xac - 0x1c000000cd - jump to 0x000000cd if stack.pop >= 0
-0xad-0xb1 - 0x0f00000000 - load: stack.push(mem[0]))
-0xb2-0xb6 - 0x0f00000002 - load: stack.push(mem[2]))
+0xad-0xb1 - 0x0f00000001 - load: stack.push(mem[1]))
+0xb2-0xb6 - 0x0f00000003 - load: stack.push(mem[3]))
 0xb7 - 0x03 - add: 	stack.pop()	stack.pop()	stack.push(stack.top+stack.second]))
-0xb8-0xbc - 0x1f00000004 - store: mem[4] <- stack.pop()
-0xbd-0xc1 - 0x0f00000001 - load: stack.push(mem[1]))
-0xc2-0xc6 - 0x0f00000003 - load: stack.push(mem[3]))
+0xb8-0xbc - 0x1f00000005 - store: mem[5] <- stack.pop()
+0xbd-0xc1 - 0x0f00000002 - load: stack.push(mem[2]))
+0xc2-0xc6 - 0x0f00000004 - load: stack.push(mem[4]))
 0xc7 - 0x03 - add: 	stack.pop()	stack.pop()	stack.push(stack.top+stack.second]))
-0xc8-0xcc - 0x1f00000005 - store: mem[5] <- stack.pop()
-0xcd-0xd1 - 0x0f00000007 - load: stack.push(mem[7]))
-0xd2-0xd6 - 0x0f00000003 - load: stack.push(mem[3]))
+0xc8-0xcc - 0x1f00000006 - store: mem[6] <- stack.pop()
+0xcd-0xd1 - 0x0f00000008 - load: stack.push(mem[8]))
+0xd2-0xd6 - 0x0f00000004 - load: stack.push(mem[4]))
 0xd7 - 0x02 - sub: 	stack.pop()	stack.pop()	stack.push(stack.top-stack.second)
 0xd8-0xdc - 0x25000000fd - jump to 0x000000fd if stack.pop == 0
-0xdd-0xe1 - 0x0f00000000 - load: stack.push(mem[0]))
-0xe2-0xe6 - 0x0f00000002 - load: stack.push(mem[2]))
+0xdd-0xe1 - 0x0f00000001 - load: stack.push(mem[1]))
+0xe2-0xe6 - 0x0f00000003 - load: stack.push(mem[3]))
 0xe7 - 0x03 - add: 	stack.pop()	stack.pop()	stack.push(stack.top+stack.second]))
-0xe8-0xec - 0x1f00000004 - store: mem[4] <- stack.pop()
-0xed-0xf1 - 0x0f00000001 - load: stack.push(mem[1]))
-0xf2-0xf6 - 0x0f00000003 - load: stack.push(mem[3]))
+0xe8-0xec - 0x1f00000005 - store: mem[5] <- stack.pop()
+0xed-0xf1 - 0x0f00000002 - load: stack.push(mem[2]))
+0xf2-0xf6 - 0x0f00000004 - load: stack.push(mem[4]))
 0xf7 - 0x03 - add: 	stack.pop()	stack.pop()	stack.push(stack.top+stack.second]))
-0xf8-0xfc - 0x1f00000005 - store: mem[5] <- stack.pop()
+0xf8-0xfc - 0x1f00000006 - store: mem[6] <- stack.pop()
 0xfd-0x101 - 0x0600000044 - lit: stack.push(68))
 0x102-0x106 - 0x1f00007cff - store: mem[31999] <- stack.pop() (ВЫВОД)
 0x107-0x10b - 0x060000000a - lit: stack.push(10))

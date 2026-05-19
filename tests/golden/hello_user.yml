@@ -1,0 +1,292 @@
+in_source: 'цело a = 1;
+
+  trap io_handler;
+
+  грамота c = читай_память;в порту появился символ — это событие модели
+
+  if ( c == 10 );
+
+  a = -1;
+
+  if-end;
+
+  if ( c > 10 );
+
+  пиши_память( c ); процессор вошёл в обработчик — это реакция на событие
+
+  if-end;
+
+  trap-end;
+
+
+  main;
+
+  di;
+
+  грамота q = "What is your name?";
+
+  грамота w = "Hello, ";
+
+  грамота e = "!";
+
+  пиши_строку ( q );
+
+  пиши_строку ( w );
+
+  ei;
+
+  while ( a > 0 );
+
+  while-end;
+
+  пиши_строку ( e );
+
+  main-end;'
+in_stdin: Alice
+out_log:
+- 'AST (Абстрактное Синтаксическое Дерево):'
+- '  Declaration (type: цело, var: ''a''):'
+- '    Number(1)'
+- '  Block [TRAP HANDLER]:'
+- '    Declaration (type: грамота, var: ''c''):'
+- '      Input (читай_память)'
+- '    If statement:'
+- '      - Condition:'
+- '        Equal (==):'
+- '          Variable(''c'')'
+- '          Number(10)'
+- '      - Body:'
+- '        Assignment (var: ''a''):'
+- '          Number(-1)'
+- '    If statement:'
+- '      - Condition:'
+- '        Greater (>):'
+- '          Variable(''c'')'
+- '          Number(10)'
+- '      - Body:'
+- '        Output (пиши_память):'
+- '          Variable(''c'')'
+- '    IRetStatement (trap-end)'
+- '  Block [MAIN]:'
+- '    Disable Interrupts (di)'
+- '    Declaration (type: грамота, var: ''q''):'
+- '      StringLiteral("What is your name?")'
+- '    Declaration (type: грамота, var: ''w''):'
+- '      StringLiteral("Hello, ")'
+- '    Declaration (type: грамота, var: ''e''):'
+- '      StringLiteral("!")'
+- '    PrintString (пиши_строку):'
+- '      Variable(''q'')'
+- '    PrintString (пиши_строку):'
+- '      Variable(''w'')'
+- '    Enable Interrupts (ei)'
+- '    While loop:'
+- '      - Condition:'
+- '        Greater (>):'
+- '          Variable(''a'')'
+- '          Number(0)'
+- '      - Body:'
+- '    PrintString (пиши_строку):'
+- '      Variable(''e'')'
+- '    Halt'
+- ''
+- Трансляция успешна
+- 'Объем бинарника (Размер бинарного файла): 196 байт.'
+- 'Конфиг лежит в: compiled\hello_user_config.json'
+- 'Байт-код:'
+- 0:6 1:0 2:0 3:0 4:1 5:1f 6:0 7:0 8:0 9:1e a:f b:0 c:0 d:7c e:fe f:1f 10:0 11:0 12:0 13:1f 14:f 15:0 16:0 17:0 18:1f 19:6
+  1a:0 1b:0 1c:0 1d:a 1e:2 1f:25 20:0 21:0 22:0 23:2e 24:6 25:ff 26:ff 27:ff 28:ff 29:1f 2a:0 2b:0 2c:0 2d:1e 2e:6 2f:0 30:0
+  31:0 32:a 33:f 34:0 35:0 36:0 37:1f 38:2 39:1c 3a:0 3b:0 3c:0 3d:48 3e:f 3f:0 40:0 41:0 42:1f 43:1f 44:0 45:0 46:7c 47:ff
+  48:22 49:24 4a:6 4b:0 4c:0 4d:0 4e:1 4f:1f 50:0 51:0 52:0 53:20 54:6 55:0 56:0 57:0 58:14 59:1f 5a:0 5b:0 5c:0 5d:21 5e:6
+  5f:0 60:0 61:0 62:1c 63:1f 64:0 65:0 66:0 67:22 68:f 69:0 6a:0 6b:0 6c:20 6d:7 6e:21 6f:17 70:1b 71:0 72:0 73:0 74:7f 75:1f
+  76:0 77:0 78:7c 79:ff 7a:20 7b:0 7c:0 7d:0 7e:6e 7f:f 80:0 81:0 82:0 83:21 84:7 85:21 86:17 87:1b 88:0 89:0 8a:0 8b:96 8c:1f
+  8d:0 8e:0 8f:7c 90:ff 91:20 92:0 93:0 94:0 95:85 96:23 97:6 98:0 99:0 9a:0 9b:0 9c:f 9d:0 9e:0 9f:0 a0:1e a1:2 a2:1c a3:0
+  a4:0 a5:0 a6:ac a7:20 a8:0 a9:0 aa:0 ab:97 ac:f ad:0 ae:0 af:0 b0:22 b1:7 b2:21 b3:17 b4:1b b5:0 b6:0 b7:0 b8:c3 b9:1f ba:0
+  bb:0 bc:7c bd:ff be:20 bf:0 c0:0 c1:0 c2:b2 c3:ff
+- ========================================
+- ''
+- === Запуск симуляции ===
+- 'TICK: 0000 | PC: 0073 | STEP: 0 | IR: 0x24 (di) | NZ: 00 | EI: 1 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0001 | PC: 0074 | STEP: 0 | IR: 0x06 (literal 1) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0002 | PC: 0079 | STEP: 0 | IR: 0x1f (store 32) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [1] | RS: [] | OUT:
+  []'
+- 'TICK: 0004 | PC: 0084 | STEP: 0 | IR: 0x06 (literal 20) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] |
+  OUT: []'
+- 'TICK: 0005 | PC: 0089 | STEP: 0 | IR: 0x1f (store 33) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [20] | RS: [] |
+  OUT: []'
+- 'TICK: 0007 | PC: 0094 | STEP: 0 | IR: 0x06 (literal 28) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] |
+  OUT: []'
+- 'TICK: 0008 | PC: 0099 | STEP: 0 | IR: 0x1f (store 34) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [28] | RS: [] |
+  OUT: []'
+- 'TICK: 0010 | PC: 0104 | STEP: 0 | IR: 0x0f (load 32) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0012 | PC: 0109 | STEP: 0 | IR: 0x07 (stack_to_a) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [1] | RS: [] |
+  OUT: []'
+- 'TICK: 0013 | PC: 0110 | STEP: 0 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0014 | PC: 0110 | STEP: 1 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0015 | PC: 0110 | STEP: 2 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [87] | RS: [] |
+  OUT: []'
+- 'TICK: 0016 | PC: 0111 | STEP: 0 | IR: 0x17 (dup) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [87] | RS: [] | OUT:
+  []'
+- 'TICK: 0017 | PC: 0112 | STEP: 0 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [87, 87] | RS: []
+  | OUT: []'
+- 'TICK: 0018 | PC: 0112 | STEP: 1 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [87] | RS: [] | OUT:
+  []'
+- 'TICK: 0019 | PC: 0117 | STEP: 0 | IR: 0x1f (store 31999) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [87] | RS: []
+  | OUT: []'
+- 'TICK: 0021 | PC: 0122 | STEP: 0 | IR: 0x20 (jmp 110) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87]'
+- 'TICK: 0022 | PC: 0110 | STEP: 0 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87]'
+- 'TICK: 0023 | PC: 0110 | STEP: 1 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87]'
+- 'TICK: 0024 | PC: 0110 | STEP: 2 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [104] | RS: []
+  | OUT: [87]'
+- 'TICK: 0025 | PC: 0111 | STEP: 0 | IR: 0x17 (dup) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [104] | RS: [] | OUT:
+  [87]'
+- 'TICK: 0026 | PC: 0112 | STEP: 0 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [104, 104] | RS: []
+  | OUT: [87]'
+- 'TICK: 0027 | PC: 0112 | STEP: 1 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [104] | RS: [] | OUT:
+  [87]'
+- 'TICK: 0028 | PC: 0117 | STEP: 0 | IR: 0x1f (store 31999) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [104] | RS: []
+  | OUT: [87]'
+- 'TICK: 0030 | PC: 0122 | STEP: 0 | IR: 0x20 (jmp 110) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104]'
+- 'TICK: 0031 | PC: 0110 | STEP: 0 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104]'
+- 'TICK: 0032 | PC: 0110 | STEP: 1 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104]'
+- 'TICK: 0033 | PC: 0110 | STEP: 2 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [97] | RS: [] |
+  OUT: [87, 104]'
+- 'TICK: 0034 | PC: 0111 | STEP: 0 | IR: 0x17 (dup) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [97] | RS: [] | OUT:
+  [87, 104]'
+- 'TICK: 0035 | PC: 0112 | STEP: 0 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [97, 97] | RS: []
+  | OUT: [87, 104]'
+- 'TICK: 0036 | PC: 0112 | STEP: 1 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [97] | RS: [] | OUT:
+  [87, 104]'
+- 'TICK: 0037 | PC: 0117 | STEP: 0 | IR: 0x1f (store 31999) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [97] | RS: []
+  | OUT: [87, 104]'
+- 'TICK: 0039 | PC: 0122 | STEP: 0 | IR: 0x20 (jmp 110) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97]'
+- 'TICK: 0040 | PC: 0110 | STEP: 0 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97]'
+- 'TICK: 0041 | PC: 0110 | STEP: 1 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97]'
+- 'TICK: 0042 | PC: 0110 | STEP: 2 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [116] | RS: []
+  | OUT: [87, 104, 97]'
+- 'TICK: 0043 | PC: 0111 | STEP: 0 | IR: 0x17 (dup) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [116] | RS: [] | OUT:
+  [87, 104, 97]'
+- 'TICK: 0044 | PC: 0112 | STEP: 0 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [116, 116] | RS: []
+  | OUT: [87, 104, 97]'
+- 'TICK: 0045 | PC: 0112 | STEP: 1 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [116] | RS: [] | OUT:
+  [87, 104, 97]'
+- 'TICK: 0046 | PC: 0117 | STEP: 0 | IR: 0x1f (store 31999) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [116] | RS: []
+  | OUT: [87, 104, 97]'
+- 'TICK: 0048 | PC: 0122 | STEP: 0 | IR: 0x20 (jmp 110) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116]'
+- 'TICK: 0049 | PC: 0110 | STEP: 0 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116]'
+- 'TICK: 0050 | PC: 0110 | STEP: 1 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116]'
+- 'TICK: 0051 | PC: 0110 | STEP: 2 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [32] | RS: [] |
+  OUT: [87, 104, 97, 116]'
+- 'TICK: 0052 | PC: 0111 | STEP: 0 | IR: 0x17 (dup) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [32] | RS: [] | OUT:
+  [87, 104, 97, 116]'
+- 'TICK: 0053 | PC: 0112 | STEP: 0 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [32, 32] | RS: []
+  | OUT: [87, 104, 97, 116]'
+- 'TICK: 0054 | PC: 0112 | STEP: 1 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [32] | RS: [] | OUT:
+  [87, 104, 97, 116]'
+- 'TICK: 0055 | PC: 0117 | STEP: 0 | IR: 0x1f (store 31999) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [32] | RS: []
+  | OUT: [87, 104, 97, 116]'
+- 'TICK: 0057 | PC: 0122 | STEP: 0 | IR: 0x20 (jmp 110) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116, 32]'
+- 'TICK: 0058 | PC: 0110 | STEP: 0 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116, 32]'
+- 'TICK: 0059 | PC: 0110 | STEP: 1 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116, 32]'
+- 'TICK: 0060 | PC: 0110 | STEP: 2 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [105] | RS: []
+  | OUT: [87, 104, 97, 116, 32]'
+- 'TICK: 0061 | PC: 0111 | STEP: 0 | IR: 0x17 (dup) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [105] | RS: [] | OUT:
+  [87, 104, 97, 116, 32]'
+- 'TICK: 0062 | PC: 0112 | STEP: 0 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [105, 105] | RS: []
+  | OUT: [87, 104, 97, 116, 32]'
+- 'TICK: 0063 | PC: 0112 | STEP: 1 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [105] | RS: [] | OUT:
+  [87, 104, 97, 116, 32]'
+- 'TICK: 0064 | PC: 0117 | STEP: 0 | IR: 0x1f (store 31999) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [105] | RS: []
+  | OUT: [87, 104, 97, 116, 32]'
+- 'TICK: 0066 | PC: 0122 | STEP: 0 | IR: 0x20 (jmp 110) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105]'
+- 'TICK: 0067 | PC: 0110 | STEP: 0 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105]'
+- 'TICK: 0068 | PC: 0110 | STEP: 1 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105]'
+- 'TICK: 0069 | PC: 0110 | STEP: 2 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [115] | RS: []
+  | OUT: [87, 104, 97, 116, 32, 105]'
+- 'TICK: 0070 | PC: 0111 | STEP: 0 | IR: 0x17 (dup) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [115] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105]'
+- 'TICK: 0071 | PC: 0112 | STEP: 0 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [115, 115] | RS: []
+  | OUT: [87, 104, 97, 116, 32, 105]'
+- 'TICK: 0072 | PC: 0112 | STEP: 1 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [115] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105]'
+- 'TICK: 0073 | PC: 0117 | STEP: 0 | IR: 0x1f (store 31999) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [115] | RS: []
+  | OUT: [87, 104, 97, 116, 32, 105]'
+- 'TICK: 0075 | PC: 0122 | STEP: 0 | IR: 0x20 (jmp 110) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105, 115]'
+- 'TICK: 0076 | PC: 0110 | STEP: 0 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105, 115]'
+- 'TICK: 0077 | PC: 0110 | STEP: 1 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105, 115]'
+- 'TICK: 0078 | PC: 0110 | STEP: 2 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [32] | RS: [] |
+  OUT: [87, 104, 97, 116, 32, 105, 115]'
+- 'TICK: 0079 | PC: 0111 | STEP: 0 | IR: 0x17 (dup) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [32] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105, 115]'
+- 'TICK: 0080 | PC: 0112 | STEP: 0 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [32, 32] | RS: []
+  | OUT: [87, 104, 97, 116, 32, 105, 115]'
+- 'TICK: 0081 | PC: 0112 | STEP: 1 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [32] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105, 115]'
+- 'TICK: 0082 | PC: 0117 | STEP: 0 | IR: 0x1f (store 31999) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [32] | RS: []
+  | OUT: [87, 104, 97, 116, 32, 105, 115]'
+- 'TICK: 0084 | PC: 0122 | STEP: 0 | IR: 0x20 (jmp 110) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105, 115, 32]'
+- 'TICK: 0085 | PC: 0110 | STEP: 0 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105, 115, 32]'
+- 'TICK: 0086 | PC: 0110 | STEP: 1 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105, 115, 32]'
+- 'TICK: 0087 | PC: 0110 | STEP: 2 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [121] | RS: []
+  | OUT: [87, 104, 97, 116, 32, 105, 115, 32]'
+- 'TICK: 0088 | PC: 0111 | STEP: 0 | IR: 0x17 (dup) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [121] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105, 115, 32]'
+- 'TICK: 0089 | PC: 0112 | STEP: 0 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [121, 121] | RS: []
+  | OUT: [87, 104, 97, 116, 32, 105, 115, 32]'
+- 'TICK: 0090 | PC: 0112 | STEP: 1 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [121] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105, 115, 32]'
+- 'TICK: 0091 | PC: 0117 | STEP: 0 | IR: 0x1f (store 31999) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [121] | RS: []
+  | OUT: [87, 104, 97, 116, 32, 105, 115, 32]'
+- 'TICK: 0093 | PC: 0122 | STEP: 0 | IR: 0x20 (jmp 110) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105, 115, 32, 121]'
+- 'TICK: 0094 | PC: 0110 | STEP: 0 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105, 115, 32, 121]'
+- 'TICK: 0095 | PC: 0110 | STEP: 1 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105, 115, 32, 121]'
+- 'TICK: 0096 | PC: 0110 | STEP: 2 | IR: 0x21 (a_store_+) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [111] | RS: []
+  | OUT: [87, 104, 97, 116, 32, 105, 115, 32, 121]'
+- 'TICK: 0097 | PC: 0111 | STEP: 0 | IR: 0x17 (dup) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [111] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105, 115, 32, 121]'
+- 'TICK: 0098 | PC: 0112 | STEP: 0 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [111, 111] | RS: []
+  | OUT: [87, 104, 97, 116, 32, 105, 115, 32, 121]'
+- 'TICK: 0099 | PC: 0112 | STEP: 1 | IR: 0x1b (if 127) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [111] | RS: [] | OUT:
+  [87, 104, 97, 116, 32, 105, 115, 32, 121]'
+- 'TICK: 0100 | PC: 0117 | STEP: 0 | IR: 0x1f (store 31999) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [111] | RS: []
+  | OUT: [87, 104, 97, 116, 32, 105, 115, 32, 121]'
+- === Симуляция завершена (HALT) ===
+- ''
+- '--- Буфер вывода ---'
+- What is your name?Hello, Alice!
+- ''
+- 'Затрачено тактов: 796'
+- '--- Дамп первых 50 ячеек Data Memory ---'
+- '[10, 87, 104, 97, 116, 32, 105, 115, 32, 121, 111, 117, 114, 32, 110, 97, 109, 101, 63, 0, 72, 101, 108, 108, 111, 44,
+  32, 0, 33, 0, -1, 10, 1, 20, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]'

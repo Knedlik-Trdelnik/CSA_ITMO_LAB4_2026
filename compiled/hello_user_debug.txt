@@ -1,46 +1,46 @@
 ---------data_memory_pos-32-bit---
-0x00-0x12 - String: "What is your name?" (ASCII: 87, 104, 97, 116, 32, 105, 115, 32, 121, 111, 117, 114, 32, 110, 97, 109, 101, 63, 0) | Указатель на начало: 0 (0x00)
-0x13-0x1a - String: "Hello, " (ASCII: 72, 101, 108, 108, 111, 44, 32, 0) | Указатель на начало: 19 (0x13)
-0x1b-0x1c - String: "!" (ASCII: 33, 0) | Указатель на начало: 27 (0x1b)
-0x1d      - Переменная 'a' (цело) расположен на 0x1d
-0x1e      - Переменная 'c' (цело) расположен на 0x1e
-0x1f      - Переменная 'q' (цело) расположен на 0x1f
-0x20      - Переменная 'w' (цело) расположен на 0x20
-0x21      - Переменная 'e' (цело) расположен на 0x21
+0x01-0x13 - String: "What is your name?" (ASCII: 87, 104, 97, 116, 32, 105, 115, 32, 121, 111, 117, 114, 32, 110, 97, 109, 101, 63, 0) | Указатель на начало: 1 (0x01)
+0x14-0x1b - String: "Hello, " (ASCII: 72, 101, 108, 108, 111, 44, 32, 0) | Указатель на начало: 20 (0x14)
+0x1c-0x1d - String: "!" (ASCII: 33, 0) | Указатель на начало: 28 (0x1c)
+0x1e      - Переменная 'a' (цело) расположен на 0x1e
+0x1f      - Переменная 'c' (цело) расположен на 0x1f
+0x20      - Переменная 'q' (цело) расположен на 0x20
+0x21      - Переменная 'w' (цело) расположен на 0x21
+0x22      - Переменная 'e' (цело) расположен на 0x22
 ---------command_memory---8-bit---
 <address> - <HEXCODE> - <mnemonic>
 0x00-0x04 - 0x0600000001 - lit: stack.push(1))
-0x05-0x09 - 0x1f0000001d - store: mem[29] <- stack.pop()
+0x05-0x09 - 0x1f0000001e - store: mem[30] <- stack.pop()
 0x0a-0x0e - 0x0f00007cfe - load: stack.push(mem[31998]) (ВВОД)
-0x0f-0x13 - 0x1f0000001e - store: mem[30] <- stack.pop()
-0x14-0x18 - 0x0f0000001e - load: stack.push(mem[30]))
+0x0f-0x13 - 0x1f0000001f - store: mem[31] <- stack.pop()
+0x14-0x18 - 0x0f0000001f - load: stack.push(mem[31]))
 0x19-0x1d - 0x060000000a - lit: stack.push(10))
 0x1e - 0x02 - sub: 	stack.pop()	stack.pop()	stack.push(stack.top-stack.second)
 0x1f-0x23 - 0x250000002e - jump to 0x0000002e if stack.pop == 0
 0x24-0x28 - 0x06ffffffff - lit: stack.push(-1))
-0x29-0x2d - 0x1f0000001d - store: mem[29] <- stack.pop()
+0x29-0x2d - 0x1f0000001e - store: mem[30] <- stack.pop()
 0x2e-0x32 - 0x060000000a - lit: stack.push(10))
-0x33-0x37 - 0x0f0000001e - load: stack.push(mem[30]))
+0x33-0x37 - 0x0f0000001f - load: stack.push(mem[31]))
 0x38 - 0x02 - sub (stack.top-stack.second)
 0x39-0x3d - 0x1c00000048 - jump to 0x00000048 if stack.pop >= 0
-0x3e-0x42 - 0x0f0000001e - load: stack.push(mem[30]))
+0x3e-0x42 - 0x0f0000001f - load: stack.push(mem[31]))
 0x43-0x47 - 0x1f00007cff - store: mem[31999] <- stack.pop() (ВЫВОД)
 0x48 - 0x22 - iret (возврат из прерывания)
 0x49 - 0x24 - di (запретить прерывания)
-0x4a-0x4e - 0x0600000000 - lit: stack.push(addr of 'What is your name?')
-0x4f-0x53 - 0x1f0000001f - store: mem[31] <- stack.pop()
-0x54-0x58 - 0x0600000013 - lit: stack.push(addr of 'Hello, ')
-0x59-0x5d - 0x1f00000020 - store: mem[32] <- stack.pop()
-0x5e-0x62 - 0x060000001b - lit: stack.push(addr of '!')
-0x63-0x67 - 0x1f00000021 - store: mem[33] <- stack.pop()
-0x68-0x6c - 0x0f0000001f - load: stack.push(mem[31]))
+0x4a-0x4e - 0x0600000001 - lit: stack.push(addr of 'What is your name?')
+0x4f-0x53 - 0x1f00000020 - store: mem[32] <- stack.pop()
+0x54-0x58 - 0x0600000014 - lit: stack.push(addr of 'Hello, ')
+0x59-0x5d - 0x1f00000021 - store: mem[33] <- stack.pop()
+0x5e-0x62 - 0x060000001c - lit: stack.push(addr of '!')
+0x63-0x67 - 0x1f00000022 - store: mem[34] <- stack.pop()
+0x68-0x6c - 0x0f00000020 - load: stack.push(mem[32]))
 0x6d - 0x07 - toa
 0x6e - 0x21 - aloadp (@+)
 0x6f - 0x17 - dup
 0x70-0x74 - 0x1b0000007f - if (выход из цикла)
 0x75-0x79 - 0x1f00007cff - store: Вывод символа
 0x7a-0x7e - 0x200000006e - jump to 0x0000006e (повтор цикла)
-0x7f-0x83 - 0x0f00000020 - load: stack.push(mem[32]))
+0x7f-0x83 - 0x0f00000021 - load: stack.push(mem[33]))
 0x84 - 0x07 - toa
 0x85 - 0x21 - aloadp (@+)
 0x86 - 0x17 - dup
@@ -49,11 +49,11 @@
 0x91-0x95 - 0x2000000085 - jump to 0x00000085 (повтор цикла)
 0x96 - 0x23 - ei (разрешить прерывания)
 0x97-0x9b - 0x0600000000 - lit: stack.push(0))
-0x9c-0xa0 - 0x0f0000001d - load: stack.push(mem[29]))
+0x9c-0xa0 - 0x0f0000001e - load: stack.push(mem[30]))
 0xa1 - 0x02 - sub (stack.top-stack.second)
 0xa2-0xa6 - 0x1c000000ac - jump to 0x000000ac if stack.pop >= 0
 0xa7-0xab  - 0x2000000097 - jump to 0x00000097
-0xac-0xb0 - 0x0f00000021 - load: stack.push(mem[33]))
+0xac-0xb0 - 0x0f00000022 - load: stack.push(mem[34]))
 0xb1 - 0x07 - toa
 0xb2 - 0x21 - aloadp (@+)
 0xb3 - 0x17 - dup

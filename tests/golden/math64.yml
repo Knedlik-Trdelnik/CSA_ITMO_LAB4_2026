@@ -1,0 +1,198 @@
+in_source: "цело a_high = 0;\nцело a_low = 2000000000;\n\nцело b_high = 0;\nцело b_low = 2000000000;\n\nцело res_high = 0;\n\
+  цело res_low = 0;\n\n; Для проверки переноса мы используем деление (сдвиг).\n; Так как у вас есть операция деления \":\"\
+  , мы можем эмулировать переполнение.\n; В 32-битном знаковом числе максимум это 2147483647.\n; Мы проверяем, не превысит\
+  \ ли сумма это число.\n\nцело limit = 2147483647;\nцело diff = 0;\n\nmain;\ndi;\n\n; Пытаемся сложить младшие части\ndiff\
+  \ = limit - a_low;\n\nif ( b_low > diff );\n    ; Произошло переполнение!\n    ; Увеличиваем старшую часть на 1\n    res_high\
+  \ = a_high + b_high + 1;\n\n    ; Высчитываем, сколько \"осталось\" в младшей части\n    ; В реальности это сложная битовая\
+  \ магия, но для алгоритмики достаточно показать логику:\n    res_low = b_low - diff - 1;\nif-end;\n\nif ( diff > b_low );\n\
+  \    ; Переполнения нет\n    res_high = a_high + b_high;\n    res_low = a_low + b_low;\nif-end;\n\nif ( diff == b_low );\n\
+  \    ; Переполнения нет\n    res_high = a_high + b_high;\n    res_low = a_low + b_low;\nif-end;\n\n; Выводим результат (должно\
+  \ получиться res_high=1, res_low=1852516352)\n; Так как у нас нет print_num, выведем в порты буквы как \"ОК\" или просто\
+  \ оставим в памяти.\n; Особенность вашего варианта - результат вычислений проверяется по дампу памяти или журналу.\n; Поэтому\
+  \ мы просто выведем букву \"D\" (Done)\n\nпиши_память( 68 ); ; 68 = 'D'\nпиши_память( 10 );\nmain-end;"
+in_stdin: ''
+out_log:
+- 'AST (Абстрактное Синтаксическое Дерево):'
+- '  Declaration (type: цело, var: ''a_high''):'
+- '    Number(0)'
+- '  Declaration (type: цело, var: ''a_low''):'
+- '    Number(2000000000)'
+- '  Declaration (type: цело, var: ''b_high''):'
+- '    Number(0)'
+- '  Declaration (type: цело, var: ''b_low''):'
+- '    Number(2000000000)'
+- '  Declaration (type: цело, var: ''res_high''):'
+- '    Number(0)'
+- '  Declaration (type: цело, var: ''res_low''):'
+- '    Number(0)'
+- '  Declaration (type: цело, var: ''limit''):'
+- '    Number(2147483647)'
+- '  Declaration (type: цело, var: ''diff''):'
+- '    Number(0)'
+- '  Block [MAIN]:'
+- '    Disable Interrupts (di)'
+- '    Assignment (var: ''diff''):'
+- '      Sub:'
+- '        Variable(''limit'')'
+- '        Variable(''a_low'')'
+- '    If statement:'
+- '      - Condition:'
+- '        Greater (>):'
+- '          Variable(''b_low'')'
+- '          Variable(''diff'')'
+- '      - Body:'
+- '        Assignment (var: ''res_high''):'
+- '          Add:'
+- '            Add:'
+- '              Variable(''a_high'')'
+- '              Variable(''b_high'')'
+- '            Number(1)'
+- '        Assignment (var: ''res_low''):'
+- '          Sub:'
+- '            Sub:'
+- '              Variable(''b_low'')'
+- '              Variable(''diff'')'
+- '            Number(1)'
+- '    If statement:'
+- '      - Condition:'
+- '        Greater (>):'
+- '          Variable(''diff'')'
+- '          Variable(''b_low'')'
+- '      - Body:'
+- '        Assignment (var: ''res_high''):'
+- '          Add:'
+- '            Variable(''a_high'')'
+- '            Variable(''b_high'')'
+- '        Assignment (var: ''res_low''):'
+- '          Add:'
+- '            Variable(''a_low'')'
+- '            Variable(''b_low'')'
+- '    If statement:'
+- '      - Condition:'
+- '        Equal (==):'
+- '          Variable(''diff'')'
+- '          Variable(''b_low'')'
+- '      - Body:'
+- '        Assignment (var: ''res_high''):'
+- '          Add:'
+- '            Variable(''a_high'')'
+- '            Variable(''b_high'')'
+- '        Assignment (var: ''res_low''):'
+- '          Add:'
+- '            Variable(''a_low'')'
+- '            Variable(''b_low'')'
+- '    Output (пиши_память):'
+- '      Number(68)'
+- '    Output (пиши_память):'
+- '      Number(10)'
+- '    Halt'
+- ''
+- Трансляция успешна
+- 'Объем бинарника (Размер бинарного файла): 274 байт.'
+- 'Конфиг лежит в: compiled\math64_config.json'
+- 'Байт-код:'
+- 0:6 1:0 2:0 3:0 4:0 5:1f 6:0 7:0 8:0 9:1 a:6 b:77 c:35 d:94 e:0 f:1f 10:0 11:0 12:0 13:2 14:6 15:0 16:0 17:0 18:0 19:1f
+  1a:0 1b:0 1c:0 1d:3 1e:6 1f:77 20:35 21:94 22:0 23:1f 24:0 25:0 26:0 27:4 28:6 29:0 2a:0 2b:0 2c:0 2d:1f 2e:0 2f:0 30:0
+  31:5 32:6 33:0 34:0 35:0 36:0 37:1f 38:0 39:0 3a:0 3b:6 3c:6 3d:7f 3e:ff 3f:ff 40:ff 41:1f 42:0 43:0 44:0 45:7 46:6 47:0
+  48:0 49:0 4a:0 4b:1f 4c:0 4d:0 4e:0 4f:8 50:24 51:f 52:0 53:0 54:0 55:7 56:f 57:0 58:0 59:0 5a:2 5b:2 5c:1f 5d:0 5e:0 5f:0
+  60:8 61:f 62:0 63:0 64:0 65:8 66:f 67:0 68:0 69:0 6a:4 6b:2 6c:1c 6d:0 6e:0 6f:0 70:9d 71:f 72:0 73:0 74:0 75:1 76:f 77:0
+  78:0 79:0 7a:3 7b:3 7c:6 7d:0 7e:0 7f:0 80:1 81:3 82:1f 83:0 84:0 85:0 86:5 87:f 88:0 89:0 8a:0 8b:4 8c:f 8d:0 8e:0 8f:0
+  90:8 91:2 92:6 93:0 94:0 95:0 96:1 97:2 98:1f 99:0 9a:0 9b:0 9c:6 9d:f 9e:0 9f:0 a0:0 a1:4 a2:f a3:0 a4:0 a5:0 a6:8 a7:2
+  a8:1c a9:0 aa:0 ab:0 ac:cd ad:f ae:0 af:0 b0:0 b1:1 b2:f b3:0 b4:0 b5:0 b6:3 b7:3 b8:1f b9:0 ba:0 bb:0 bc:5 bd:f be:0 bf:0
+  c0:0 c1:2 c2:f c3:0 c4:0 c5:0 c6:4 c7:3 c8:1f c9:0 ca:0 cb:0 cc:6 cd:f ce:0 cf:0 d0:0 d1:8 d2:f d3:0 d4:0 d5:0 d6:4 d7:2
+  d8:25 d9:0 da:0 db:0 dc:fd dd:f de:0 df:0 e0:0 e1:1 e2:f e3:0 e4:0 e5:0 e6:3 e7:3 e8:1f e9:0 ea:0 eb:0 ec:5 ed:f ee:0 ef:0
+  f0:0 f1:2 f2:f f3:0 f4:0 f5:0 f6:4 f7:3 f8:1f f9:0 fa:0 fb:0 fc:6 fd:6 fe:0 ff:0 100:0 101:44 102:1f 103:0 104:0 105:7c
+  106:ff 107:6 108:0 109:0 10a:0 10b:a 10c:1f 10d:0 10e:0 10f:7c 110:ff 111:ff
+- ========================================
+- ''
+- === Запуск симуляции ===
+- 'TICK: 0000 | PC: 0080 | STEP: 0 | IR: 0x24 (di) | NZ: 00 | EI: 1 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0001 | PC: 0081 | STEP: 0 | IR: 0x0f (load 7) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0003 | PC: 0086 | STEP: 0 | IR: 0x0f (load 2) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [2147483647] | RS:
+  [] | OUT: []'
+- 'TICK: 0005 | PC: 0091 | STEP: 0 | IR: 0x02 (sub) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [2147483647, 2000000000]
+  | RS: [] | OUT: []'
+- 'TICK: 0006 | PC: 0091 | STEP: 1 | IR: 0x02 (sub) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0007 | PC: 0092 | STEP: 0 | IR: 0x1f (store 8) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [147483647] | RS:
+  [] | OUT: []'
+- 'TICK: 0009 | PC: 0097 | STEP: 0 | IR: 0x0f (load 8) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0011 | PC: 0102 | STEP: 0 | IR: 0x0f (load 4) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [147483647] | RS:
+  [] | OUT: []'
+- 'TICK: 0013 | PC: 0107 | STEP: 0 | IR: 0x02 (sub) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [147483647, 2000000000]
+  | RS: [] | OUT: []'
+- 'TICK: 0014 | PC: 0107 | STEP: 1 | IR: 0x02 (sub) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0015 | PC: 0108 | STEP: 0 | IR: 0x1c (mif 157) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [-1852516353] | RS:
+  [] | OUT: []'
+- 'TICK: 0016 | PC: 0108 | STEP: 1 | IR: 0x1c (mif 157) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0017 | PC: 0113 | STEP: 0 | IR: 0x0f (load 1) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0019 | PC: 0118 | STEP: 0 | IR: 0x0f (load 3) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0] | RS: [] | OUT:
+  []'
+- 'TICK: 0021 | PC: 0123 | STEP: 0 | IR: 0x03 (add) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0, 0] | RS: [] | OUT:
+  []'
+- 'TICK: 0022 | PC: 0123 | STEP: 1 | IR: 0x03 (add) | NZ: 01 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0023 | PC: 0124 | STEP: 0 | IR: 0x06 (literal 1) | NZ: 01 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0] | RS: [] |
+  OUT: []'
+- 'TICK: 0024 | PC: 0129 | STEP: 0 | IR: 0x03 (add) | NZ: 01 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0, 1] | RS: [] | OUT:
+  []'
+- 'TICK: 0025 | PC: 0129 | STEP: 1 | IR: 0x03 (add) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0026 | PC: 0130 | STEP: 0 | IR: 0x1f (store 5) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [1] | RS: [] | OUT:
+  []'
+- 'TICK: 0028 | PC: 0135 | STEP: 0 | IR: 0x0f (load 4) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0030 | PC: 0140 | STEP: 0 | IR: 0x0f (load 8) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [2000000000] | RS:
+  [] | OUT: []'
+- 'TICK: 0032 | PC: 0145 | STEP: 0 | IR: 0x02 (sub) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [2000000000, 147483647]
+  | RS: [] | OUT: []'
+- 'TICK: 0033 | PC: 0145 | STEP: 1 | IR: 0x02 (sub) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0034 | PC: 0146 | STEP: 0 | IR: 0x06 (literal 1) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [1852516353] |
+  RS: [] | OUT: []'
+- 'TICK: 0035 | PC: 0151 | STEP: 0 | IR: 0x02 (sub) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [1852516353, 1] | RS:
+  [] | OUT: []'
+- 'TICK: 0036 | PC: 0151 | STEP: 1 | IR: 0x02 (sub) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0037 | PC: 0152 | STEP: 0 | IR: 0x1f (store 6) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [1852516352] | RS:
+  [] | OUT: []'
+- 'TICK: 0039 | PC: 0157 | STEP: 0 | IR: 0x0f (load 4) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0041 | PC: 0162 | STEP: 0 | IR: 0x0f (load 8) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [2000000000] | RS:
+  [] | OUT: []'
+- 'TICK: 0043 | PC: 0167 | STEP: 0 | IR: 0x02 (sub) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [2000000000, 147483647]
+  | RS: [] | OUT: []'
+- 'TICK: 0044 | PC: 0167 | STEP: 1 | IR: 0x02 (sub) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0045 | PC: 0168 | STEP: 0 | IR: 0x1c (mif 205) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [1852516353] | RS:
+  [] | OUT: []'
+- 'TICK: 0046 | PC: 0168 | STEP: 1 | IR: 0x1c (mif 205) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0047 | PC: 0205 | STEP: 0 | IR: 0x0f (load 8) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0049 | PC: 0210 | STEP: 0 | IR: 0x0f (load 4) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [147483647] | RS:
+  [] | OUT: []'
+- 'TICK: 0051 | PC: 0215 | STEP: 0 | IR: 0x02 (sub) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [147483647, 2000000000]
+  | RS: [] | OUT: []'
+- 'TICK: 0052 | PC: 0215 | STEP: 1 | IR: 0x02 (sub) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0053 | PC: 0216 | STEP: 0 | IR: 0x25 (nif) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [-1852516353] | RS: []
+  | OUT: []'
+- 'TICK: 0054 | PC: 0216 | STEP: 1 | IR: 0x25 (nif) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0055 | PC: 0253 | STEP: 0 | IR: 0x06 (literal 68) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] |
+  OUT: []'
+- 'TICK: 0056 | PC: 0258 | STEP: 0 | IR: 0x1f (store 31999) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [68] | RS: []
+  | OUT: []'
+- 'TICK: 0058 | PC: 0263 | STEP: 0 | IR: 0x06 (literal 10) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] |
+  OUT: [68]'
+- 'TICK: 0059 | PC: 0268 | STEP: 0 | IR: 0x1f (store 31999) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [10] | RS: []
+  | OUT: [68]'
+- 'TICK: 0061 | PC: 0273 | STEP: 0 | IR: 0xff (halt) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: [68,
+  10]'
+- === Симуляция завершена (HALT) ===
+- ''
+- '--- Буфер вывода ---'
+- D
+- ''
+- ''
+- 'Затрачено тактов: 61'
+- '--- Дамп первых 50 ячеек Data Memory ---'
+- '[0, 0, 2000000000, 0, 2000000000, 1, 1852516352, 2147483647, 147483647, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]'

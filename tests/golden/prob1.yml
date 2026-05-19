@@ -1,0 +1,297 @@
+in_source: "цело max_pal = 0;\nцело a = 999;\nцело b = 0;\nцело prod = 0;\nцело temp = 0;\nцело rev = 0;\nцело rem = 0;\n\
+  цело keep_going = 1;\n\nmain;\ndi;\n\nwhile ( a > 99 );\n    b = a;\n    keep_going = 1;\n\n    while ( keep_going > 0 );\n\
+  \        prod = a * b;\n\n\n        ; нет смысла уменьшать b дальше. Выходим из цикла.\n        if ( max_pal > prod );\n\
+  \            keep_going = 0;\n        if-end;\n\n        if ( max_pal == prod );\n            keep_going = 0;\n        if-end;\n\
+  \n        if ( keep_going > 0 );\n            temp = prod;\n            rev = 0;\n\n            while ( temp > 0 );\n  \
+  \              rem = temp % 10;\n                rev = rev * 10 + rem;\n                temp = temp : 10;\n            while-end;\n\
+  \n            if ( rev == prod );\n                max_pal = prod;\n            if-end;\n        if-end;\n\n        b =\
+  \ b - 1;\n\n        if ( 100 > b );\n            keep_going = 0;\n        if-end;\n\n    while-end;\n\n    a = a - 1;\n\
+  while-end;\n\nпиши_память( max_pal );\nmain-end;"
+in_stdin: ''
+out_log:
+- 'AST (Абстрактное Синтаксическое Дерево):'
+- '  Declaration (type: цело, var: ''max_pal''):'
+- '    Number(0)'
+- '  Declaration (type: цело, var: ''a''):'
+- '    Number(999)'
+- '  Declaration (type: цело, var: ''b''):'
+- '    Number(0)'
+- '  Declaration (type: цело, var: ''prod''):'
+- '    Number(0)'
+- '  Declaration (type: цело, var: ''temp''):'
+- '    Number(0)'
+- '  Declaration (type: цело, var: ''rev''):'
+- '    Number(0)'
+- '  Declaration (type: цело, var: ''rem''):'
+- '    Number(0)'
+- '  Declaration (type: цело, var: ''keep_going''):'
+- '    Number(1)'
+- '  Block [MAIN]:'
+- '    Disable Interrupts (di)'
+- '    While loop:'
+- '      - Condition:'
+- '        Greater (>):'
+- '          Variable(''a'')'
+- '          Number(99)'
+- '      - Body:'
+- '        Assignment (var: ''b''):'
+- '          Variable(''a'')'
+- '        Assignment (var: ''keep_going''):'
+- '          Number(1)'
+- '        While loop:'
+- '          - Condition:'
+- '            Greater (>):'
+- '              Variable(''keep_going'')'
+- '              Number(0)'
+- '          - Body:'
+- '            Assignment (var: ''prod''):'
+- '              Mul:'
+- '                Variable(''a'')'
+- '                Variable(''b'')'
+- '            If statement:'
+- '              - Condition:'
+- '                Greater (>):'
+- '                  Variable(''max_pal'')'
+- '                  Variable(''prod'')'
+- '              - Body:'
+- '                Assignment (var: ''keep_going''):'
+- '                  Number(0)'
+- '            If statement:'
+- '              - Condition:'
+- '                Equal (==):'
+- '                  Variable(''max_pal'')'
+- '                  Variable(''prod'')'
+- '              - Body:'
+- '                Assignment (var: ''keep_going''):'
+- '                  Number(0)'
+- '            If statement:'
+- '              - Condition:'
+- '                Greater (>):'
+- '                  Variable(''keep_going'')'
+- '                  Number(0)'
+- '              - Body:'
+- '                Assignment (var: ''temp''):'
+- '                  Variable(''prod'')'
+- '                Assignment (var: ''rev''):'
+- '                  Number(0)'
+- '                While loop:'
+- '                  - Condition:'
+- '                    Greater (>):'
+- '                      Variable(''temp'')'
+- '                      Number(0)'
+- '                  - Body:'
+- '                    Assignment (var: ''rem''):'
+- '                      Mod (%):'
+- '                        Variable(''temp'')'
+- '                        Number(10)'
+- '                    Assignment (var: ''rev''):'
+- '                      Add:'
+- '                        Mul:'
+- '                          Variable(''rev'')'
+- '                          Number(10)'
+- '                        Variable(''rem'')'
+- '                    Assignment (var: ''temp''):'
+- '                      Div:'
+- '                        Variable(''temp'')'
+- '                        Number(10)'
+- '                If statement:'
+- '                  - Condition:'
+- '                    Equal (==):'
+- '                      Variable(''rev'')'
+- '                      Variable(''prod'')'
+- '                  - Body:'
+- '                    Assignment (var: ''max_pal''):'
+- '                      Variable(''prod'')'
+- '            Assignment (var: ''b''):'
+- '              Sub:'
+- '                Variable(''b'')'
+- '                Number(1)'
+- '            If statement:'
+- '              - Condition:'
+- '                Greater (>):'
+- '                  Number(100)'
+- '                  Variable(''b'')'
+- '              - Body:'
+- '                Assignment (var: ''keep_going''):'
+- '                  Number(0)'
+- '        Assignment (var: ''a''):'
+- '          Sub:'
+- '            Variable(''a'')'
+- '            Number(1)'
+- '    Output (пиши_память):'
+- '      Variable(''max_pal'')'
+- '    Halt'
+- ''
+- Трансляция успешна
+- 'Объем бинарника (Размер бинарного файла): 417 байт.'
+- 'Конфиг лежит в: compiled\prob1_config.json'
+- 'Байт-код:'
+- 0:6 1:0 2:0 3:0 4:0 5:1f 6:0 7:0 8:0 9:1 a:6 b:0 c:0 d:3 e:e7 f:1f 10:0 11:0 12:0 13:2 14:6 15:0 16:0 17:0 18:0 19:1f 1a:0
+  1b:0 1c:0 1d:3 1e:6 1f:0 20:0 21:0 22:0 23:1f 24:0 25:0 26:0 27:4 28:6 29:0 2a:0 2b:0 2c:0 2d:1f 2e:0 2f:0 30:0 31:5 32:6
+  33:0 34:0 35:0 36:0 37:1f 38:0 39:0 3a:0 3b:6 3c:6 3d:0 3e:0 3f:0 40:0 41:1f 42:0 43:0 44:0 45:7 46:6 47:0 48:0 49:0 4a:1
+  4b:1f 4c:0 4d:0 4e:0 4f:8 50:24 51:6 52:0 53:0 54:0 55:63 56:f 57:0 58:0 59:0 5a:2 5b:2 5c:1c 5d:0 5e:0 5f:1 60:96 61:f
+  62:0 63:0 64:0 65:2 66:1f 67:0 68:0 69:0 6a:3 6b:6 6c:0 6d:0 6e:0 6f:1 70:1f 71:0 72:0 73:0 74:8 75:6 76:0 77:0 78:0 79:0
+  7a:f 7b:0 7c:0 7d:0 7e:8 7f:2 80:1c 81:0 82:0 83:1 84:81 85:f 86:0 87:0 88:0 89:2 8a:f 8b:0 8c:0 8d:0 8e:3 8f:4 90:1f 91:0
+  92:0 93:0 94:4 95:f 96:0 97:0 98:0 99:4 9a:f 9b:0 9c:0 9d:0 9e:1 9f:2 a0:1c a1:0 a2:0 a3:0 a4:af a5:6 a6:0 a7:0 a8:0 a9:0
+  aa:1f ab:0 ac:0 ad:0 ae:8 af:f b0:0 b1:0 b2:0 b3:1 b4:f b5:0 b6:0 b7:0 b8:4 b9:2 ba:25 bb:0 bc:0 bd:0 be:c9 bf:6 c0:0 c1:0
+  c2:0 c3:0 c4:1f c5:0 c6:0 c7:0 c8:8 c9:6 ca:0 cb:0 cc:0 cd:0 ce:f cf:0 d0:0 d1:0 d2:8 d3:2 d4:1c d5:0 d6:0 d7:1 d8:52 d9:f
+  da:0 db:0 dc:0 dd:4 de:1f df:0 e0:0 e1:0 e2:5 e3:6 e4:0 e5:0 e6:0 e7:0 e8:1f e9:0 ea:0 eb:0 ec:6 ed:6 ee:0 ef:0 f0:0 f1:0
+  f2:f f3:0 f4:0 f5:0 f6:5 f7:2 f8:1c f9:0 fa:0 fb:1 fc:38 fd:f fe:0 ff:0 100:0 101:5 102:6 103:0 104:0 105:0 106:a 107:26
+  108:1f 109:0 10a:0 10b:0 10c:7 10d:f 10e:0 10f:0 110:0 111:6 112:6 113:0 114:0 115:0 116:a 117:4 118:f 119:0 11a:0 11b:0
+  11c:7 11d:3 11e:1f 11f:0 120:0 121:0 122:6 123:f 124:0 125:0 126:0 127:5 128:6 129:0 12a:0 12b:0 12c:a 12d:5 12e:1f 12f:0
+  130:0 131:0 132:5 133:20 134:0 135:0 136:0 137:ed 138:f 139:0 13a:0 13b:0 13c:6 13d:f 13e:0 13f:0 140:0 141:4 142:2 143:25
+  144:0 145:0 146:1 147:52 148:f 149:0 14a:0 14b:0 14c:4 14d:1f 14e:0 14f:0 150:0 151:1 152:f 153:0 154:0 155:0 156:3 157:6
+  158:0 159:0 15a:0 15b:1 15c:2 15d:1f 15e:0 15f:0 160:0 161:3 162:f 163:0 164:0 165:0 166:3 167:6 168:0 169:0 16a:0 16b:64
+  16c:2 16d:1c 16e:0 16f:0 170:1 171:7c 172:6 173:0 174:0 175:0 176:0 177:1f 178:0 179:0 17a:0 17b:8 17c:20 17d:0 17e:0 17f:0
+  180:75 181:f 182:0 183:0 184:0 185:2 186:6 187:0 188:0 189:0 18a:1 18b:2 18c:1f 18d:0 18e:0 18f:0 190:2 191:20 192:0 193:0
+  194:0 195:51 196:f 197:0 198:0 199:0 19a:1 19b:1f 19c:0 19d:0 19e:7c 19f:ff 1a0:ff
+- ========================================
+- ''
+- === Запуск симуляции ===
+- 'TICK: 0000 | PC: 0080 | STEP: 0 | IR: 0x24 (di) | NZ: 00 | EI: 1 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0001 | PC: 0081 | STEP: 0 | IR: 0x06 (literal 99) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] |
+  OUT: []'
+- 'TICK: 0002 | PC: 0086 | STEP: 0 | IR: 0x0f (load 2) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [99] | RS: [] | OUT:
+  []'
+- 'TICK: 0004 | PC: 0091 | STEP: 0 | IR: 0x02 (sub) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [99, 999] | RS: [] |
+  OUT: []'
+- 'TICK: 0005 | PC: 0091 | STEP: 1 | IR: 0x02 (sub) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0006 | PC: 0092 | STEP: 0 | IR: 0x1c (mif 406) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [-900] | RS: [] |
+  OUT: []'
+- 'TICK: 0007 | PC: 0092 | STEP: 1 | IR: 0x1c (mif 406) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0008 | PC: 0097 | STEP: 0 | IR: 0x0f (load 2) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0010 | PC: 0102 | STEP: 0 | IR: 0x1f (store 3) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [999] | RS: [] |
+  OUT: []'
+- 'TICK: 0012 | PC: 0107 | STEP: 0 | IR: 0x06 (literal 1) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0013 | PC: 0112 | STEP: 0 | IR: 0x1f (store 8) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [1] | RS: [] | OUT:
+  []'
+- 'TICK: 0015 | PC: 0117 | STEP: 0 | IR: 0x06 (literal 0) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0016 | PC: 0122 | STEP: 0 | IR: 0x0f (load 8) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0] | RS: [] | OUT:
+  []'
+- 'TICK: 0018 | PC: 0127 | STEP: 0 | IR: 0x02 (sub) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0, 1] | RS: [] | OUT:
+  []'
+- 'TICK: 0019 | PC: 0127 | STEP: 1 | IR: 0x02 (sub) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0020 | PC: 0128 | STEP: 0 | IR: 0x1c (mif 385) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [-1] | RS: [] | OUT:
+  []'
+- 'TICK: 0021 | PC: 0128 | STEP: 1 | IR: 0x1c (mif 385) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0022 | PC: 0133 | STEP: 0 | IR: 0x0f (load 2) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0024 | PC: 0138 | STEP: 0 | IR: 0x0f (load 3) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [999] | RS: [] | OUT:
+  []'
+- 'TICK: 0026 | PC: 0143 | STEP: 0 | IR: 0x04 (mul) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [999, 999] | RS: [] |
+  OUT: []'
+- 'TICK: 0027 | PC: 0143 | STEP: 1 | IR: 0x04 (mul) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0028 | PC: 0144 | STEP: 0 | IR: 0x1f (store 4) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [998001] | RS: []
+  | OUT: []'
+- 'TICK: 0030 | PC: 0149 | STEP: 0 | IR: 0x0f (load 4) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0032 | PC: 0154 | STEP: 0 | IR: 0x0f (load 1) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [998001] | RS: []
+  | OUT: []'
+- 'TICK: 0034 | PC: 0159 | STEP: 0 | IR: 0x02 (sub) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [998001, 0] | RS: []
+  | OUT: []'
+- 'TICK: 0035 | PC: 0159 | STEP: 1 | IR: 0x02 (sub) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0036 | PC: 0160 | STEP: 0 | IR: 0x1c (mif 175) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [998001] | RS: []
+  | OUT: []'
+- 'TICK: 0037 | PC: 0160 | STEP: 1 | IR: 0x1c (mif 175) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0038 | PC: 0175 | STEP: 0 | IR: 0x0f (load 1) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0040 | PC: 0180 | STEP: 0 | IR: 0x0f (load 4) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0] | RS: [] | OUT:
+  []'
+- 'TICK: 0042 | PC: 0185 | STEP: 0 | IR: 0x02 (sub) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0, 998001] | RS: []
+  | OUT: []'
+- 'TICK: 0043 | PC: 0185 | STEP: 1 | IR: 0x02 (sub) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0044 | PC: 0186 | STEP: 0 | IR: 0x25 (nif) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [-998001] | RS: [] |
+  OUT: []'
+- 'TICK: 0045 | PC: 0186 | STEP: 1 | IR: 0x25 (nif) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0046 | PC: 0201 | STEP: 0 | IR: 0x06 (literal 0) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0047 | PC: 0206 | STEP: 0 | IR: 0x0f (load 8) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0] | RS: [] | OUT:
+  []'
+- 'TICK: 0049 | PC: 0211 | STEP: 0 | IR: 0x02 (sub) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0, 1] | RS: [] | OUT:
+  []'
+- 'TICK: 0050 | PC: 0211 | STEP: 1 | IR: 0x02 (sub) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0051 | PC: 0212 | STEP: 0 | IR: 0x1c (mif 338) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [-1] | RS: [] | OUT:
+  []'
+- 'TICK: 0052 | PC: 0212 | STEP: 1 | IR: 0x1c (mif 338) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0053 | PC: 0217 | STEP: 0 | IR: 0x0f (load 4) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0055 | PC: 0222 | STEP: 0 | IR: 0x1f (store 5) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [998001] | RS: []
+  | OUT: []'
+- 'TICK: 0057 | PC: 0227 | STEP: 0 | IR: 0x06 (literal 0) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0058 | PC: 0232 | STEP: 0 | IR: 0x1f (store 6) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0] | RS: [] | OUT:
+  []'
+- 'TICK: 0060 | PC: 0237 | STEP: 0 | IR: 0x06 (literal 0) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0061 | PC: 0242 | STEP: 0 | IR: 0x0f (load 5) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0] | RS: [] | OUT:
+  []'
+- 'TICK: 0063 | PC: 0247 | STEP: 0 | IR: 0x02 (sub) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0, 998001] | RS: []
+  | OUT: []'
+- 'TICK: 0064 | PC: 0247 | STEP: 1 | IR: 0x02 (sub) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0065 | PC: 0248 | STEP: 0 | IR: 0x1c (mif 312) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [-998001] | RS: []
+  | OUT: []'
+- 'TICK: 0066 | PC: 0248 | STEP: 1 | IR: 0x1c (mif 312) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0067 | PC: 0253 | STEP: 0 | IR: 0x0f (load 5) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0069 | PC: 0258 | STEP: 0 | IR: 0x06 (literal 10) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [998001] | RS:
+  [] | OUT: []'
+- 'TICK: 0070 | PC: 0263 | STEP: 0 | IR: 0x26 (mod) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [998001, 10] | RS: []
+  | OUT: []'
+- 'TICK: 0071 | PC: 0263 | STEP: 1 | IR: 0x26 (mod) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0072 | PC: 0264 | STEP: 0 | IR: 0x1f (store 7) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [1] | RS: [] | OUT:
+  []'
+- 'TICK: 0074 | PC: 0269 | STEP: 0 | IR: 0x0f (load 6) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0076 | PC: 0274 | STEP: 0 | IR: 0x06 (literal 10) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0] | RS: [] |
+  OUT: []'
+- 'TICK: 0077 | PC: 0279 | STEP: 0 | IR: 0x04 (mul) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0, 10] | RS: [] | OUT:
+  []'
+- 'TICK: 0078 | PC: 0279 | STEP: 1 | IR: 0x04 (mul) | NZ: 01 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0079 | PC: 0280 | STEP: 0 | IR: 0x0f (load 7) | NZ: 01 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0] | RS: [] | OUT:
+  []'
+- 'TICK: 0081 | PC: 0285 | STEP: 0 | IR: 0x03 (add) | NZ: 01 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0, 1] | RS: [] | OUT:
+  []'
+- 'TICK: 0082 | PC: 0285 | STEP: 1 | IR: 0x03 (add) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0083 | PC: 0286 | STEP: 0 | IR: 0x1f (store 6) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [1] | RS: [] | OUT:
+  []'
+- 'TICK: 0085 | PC: 0291 | STEP: 0 | IR: 0x0f (load 5) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0087 | PC: 0296 | STEP: 0 | IR: 0x06 (literal 10) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [998001] | RS:
+  [] | OUT: []'
+- 'TICK: 0088 | PC: 0301 | STEP: 0 | IR: 0x05 (div) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [998001, 10] | RS: []
+  | OUT: []'
+- 'TICK: 0089 | PC: 0301 | STEP: 1 | IR: 0x05 (div) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0090 | PC: 0302 | STEP: 0 | IR: 0x1f (store 5) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [99800] | RS: []
+  | OUT: []'
+- 'TICK: 0092 | PC: 0307 | STEP: 0 | IR: 0x20 (jmp 237) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0093 | PC: 0237 | STEP: 0 | IR: 0x06 (literal 0) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0094 | PC: 0242 | STEP: 0 | IR: 0x0f (load 5) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0] | RS: [] | OUT:
+  []'
+- 'TICK: 0096 | PC: 0247 | STEP: 0 | IR: 0x02 (sub) | NZ: 00 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [0, 99800] | RS: [] |
+  OUT: []'
+- 'TICK: 0097 | PC: 0247 | STEP: 1 | IR: 0x02 (sub) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT: []'
+- 'TICK: 0098 | PC: 0248 | STEP: 0 | IR: 0x1c (mif 312) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [-99800] | RS: []
+  | OUT: []'
+- 'TICK: 0099 | PC: 0248 | STEP: 1 | IR: 0x1c (mif 312) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- 'TICK: 0100 | PC: 0253 | STEP: 0 | IR: 0x0f (load 5) | NZ: 10 | EI: 0 | IS INTR: 0 | IN INTR: 0 | DS: [] | RS: [] | OUT:
+  []'
+- === Симуляция завершена (HALT) ===
+- ''
+- '--- Буфер вывода ---'
+- '906609'
+- ''
+- 'Затрачено тактов: 1748031'
+- '--- Дамп первых 50 ячеек Data Memory ---'
+- '[0, 906609, 99, 99, 10000, 0, 652709, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]'
