@@ -1094,7 +1094,8 @@ def makeShedule(input_text, filename="shedule.txt"):
             current_tick += step
             f.write(f"{current_tick} {char}\n")
         current_tick += 40
-        f.write(f"{current_tick } {ord('\n')}\n")
+        newline_code = ord('\n')
+        f.write(f"{current_tick} {newline_code}\n")
     print(f"Расписание ввода сохранено в: {filename}")
 
 
