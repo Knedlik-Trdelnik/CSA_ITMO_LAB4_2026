@@ -1133,8 +1133,8 @@ def main(source="input"):
     print("Трансляция успешна")
 
     print(f"Объем бинарника (Размер бинарного файла): {len(binary_data)} байт.")
-    formatted_path = f"{target_path}_config.json".replace(os.sep, '/')
-    print(f"Конфиг лежит в: {formatted_path}")
+
+    print(f"Конфиг лежит и все остальное в папке compiled")
 
     print("Байт-код:")
     cnt = 0
