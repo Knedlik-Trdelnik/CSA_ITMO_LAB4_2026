@@ -1134,7 +1134,7 @@ def main(source="input"):
 
     print(f"Объем бинарника (Размер бинарного файла): {len(binary_data)} байт.")
 
-    print(f"Конфиг лежит и все остальное в папке compiled.Его имя = {target_path}_config.json")
+    print(f"Конфиг лежит и все остальное в папке compiled.Его имя = {source}_config.json")
 
     print("Байт-код:")
     cnt = 0
