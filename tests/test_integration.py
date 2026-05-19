@@ -9,6 +9,14 @@ from pathlib import Path
 import pytest
 import yaml
 
+def str_presenter(dumper, data):
+    if '\n' in data:
+        data = data.replace('\r', '')
+        return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
+    return dumper.represent_scalar('tag:yaml.org,2002:str', data)
+
+yaml.add_representer(str, str_presenter, Dumper=yaml.SafeDumper)
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
 TEST_DIR = Path(__file__).resolve().parent
 EXAMPLES_DIR = ROOT_DIR / "examples"

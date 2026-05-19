@@ -1,12 +1,9 @@
-in_source: 'main;
-
+in_source: |-
+  main;
   грамота s = "Hello, World!";
-
   пиши_строку( s );
-
   пиши_память( 10 );  Выводим перенос строки (\n)
-
-  main-end;'
+  main-end;
 in_stdin: ''
 out_log:
 - 'AST (Абстрактное Синтаксическое Дерево):'

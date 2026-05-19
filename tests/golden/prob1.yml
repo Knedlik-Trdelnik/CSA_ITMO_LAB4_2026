@@ -1,12 +1,61 @@
-in_source: "цело max_pal = 0;\nцело a = 999;\nцело b = 0;\nцело prod = 0;\nцело temp = 0;\nцело rev = 0;\nцело rem = 0;\n\
-  цело keep_going = 1;\n\nmain;\ndi;\n\nwhile ( a > 99 );\n    b = a;\n    keep_going = 1;\n\n    while ( keep_going > 0 );\n\
-  \        prod = a * b;\n\n\n        ; нет смысла уменьшать b дальше. Выходим из цикла.\n        if ( max_pal > prod );\n\
-  \            keep_going = 0;\n        if-end;\n\n        if ( max_pal == prod );\n            keep_going = 0;\n        if-end;\n\
-  \n        if ( keep_going > 0 );\n            temp = prod;\n            rev = 0;\n\n            while ( temp > 0 );\n  \
-  \              rem = temp % 10;\n                rev = rev * 10 + rem;\n                temp = temp : 10;\n            while-end;\n\
-  \n            if ( rev == prod );\n                max_pal = prod;\n            if-end;\n        if-end;\n\n        b =\
-  \ b - 1;\n\n        if ( 100 > b );\n            keep_going = 0;\n        if-end;\n\n    while-end;\n\n    a = a - 1;\n\
-  while-end;\n\nпиши_память( max_pal );\nmain-end;"
+in_source: |-
+  цело max_pal = 0;
+  цело a = 999;
+  цело b = 0;
+  цело prod = 0;
+  цело temp = 0;
+  цело rev = 0;
+  цело rem = 0;
+  цело keep_going = 1;
+
+  main;
+  di;
+
+  while ( a > 99 );
+      b = a;
+      keep_going = 1;
+
+      while ( keep_going > 0 );
+          prod = a * b;
+
+
+          ; нет смысла уменьшать b дальше. Выходим из цикла.
+          if ( max_pal > prod );
+              keep_going = 0;
+          if-end;
+
+          if ( max_pal == prod );
+              keep_going = 0;
+          if-end;
+
+          if ( keep_going > 0 );
+              temp = prod;
+              rev = 0;
+
+              while ( temp > 0 );
+                  rem = temp % 10;
+                  rev = rev * 10 + rem;
+                  temp = temp : 10;
+              while-end;
+
+              if ( rev == prod );
+                  max_pal = prod;
+              if-end;
+          if-end;
+
+          b = b - 1;
+
+          if ( 100 > b );
+              keep_going = 0;
+          if-end;
+
+      while-end;
+
+      a = a - 1;
+  while-end;
+
+  пиши_память( max_pal );
+  main-end;
 in_stdin: ''
 out_log:
 - 'AST (Абстрактное Синтаксическое Дерево):'
