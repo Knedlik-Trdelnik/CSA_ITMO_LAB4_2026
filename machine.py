@@ -129,8 +129,6 @@ class DataPath:
     register_a = None
     "Регистр А. Инициализируется нулём."
 
-    register_b = None
-    "Регистр В. Инициализируется нулём."
 
     stack_size = 256
     stack_pointer = 0
@@ -153,7 +151,6 @@ class DataPath:
 
         self.address_register = 0
         self.register_a = 0
-        self.register_b = 0
         self.ALU = alu
 
         self.IO_INPUT_ADDR = input_port
@@ -167,11 +164,6 @@ class DataPath:
         else:
             self.register_a = self.ALU.alu_output
 
-    def signal_set_b(self, stack_or_ALU):
-        if stack_or_ALU:
-            self.register_b = self.stack_pop()
-        else:
-            self.register_b = self.ALU.alu_output
 
     def read_from_memory(self):
         """Чтение из памяти с дешифратором адреса (Memory-Mapped I/O)"""
@@ -215,9 +207,6 @@ class DataPath:
         if first_part and second_part and not third_part:  # 1 1 0 A->TOP
             val = self.register_a
             self.register_a = 0
-        elif first_part and not second_part and not third_part:  # 1 0 0 B->TOP
-            val = self.register_b
-            self.register_b = 0
         elif not first_part and second_part and not third_part:  # 0 1 0 ALU->TOP
             val = self.ALU.alu_output
         elif not first_part and not second_part and not third_part:  # 0 0 0 MEM->TOP
@@ -283,11 +272,9 @@ class DataPath:
         else:
             self.ALU.left = self.register_a
 
-    def signal_set_right_ALU(self, is_stack):
+    def signal_set_right_ALU(self, is_stack = True):
         if is_stack:
             self.ALU.right = self.stack_pop()
-        else:
-            self.ALU.right = self.register_b
 
     def signal_latch_addres_register(self, a_or_cu, cu_value=0):
         if a_or_cu == True:
@@ -495,19 +482,7 @@ class ControlUnit:
             self.tick()
             return
 
-        if opcode is Opcode.TOB:
-            self.data_path.signal_set_b(True)
-            self.signal_latch_program_counter(False, False)
-            self.tick()
-            return
-
         if opcode is Opcode.TOSTACKFROMA:
-            self.data_path.stack_push(True, True, False)
-            self.signal_latch_program_counter(False, False)
-            self.tick()
-            return
-
-        if opcode is Opcode.TOSTACKFROMB:
             self.data_path.stack_push(True, True, False)
             self.signal_latch_program_counter(False, False)
             self.tick()

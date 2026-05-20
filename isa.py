@@ -21,12 +21,8 @@ class Opcode(str, Enum):
 
     LIT = "literal"
     TOA = "stack_to_a"
-    TOB = "stack_to_b"
     TOSTACKFROMA = "a_to_stack"
-    TOSTACKFROMB = "b_to_stack"
-    BSTORE = "b_store"
     ASTORE = "a_store"
-    BLOAD = "b_load"
     ALOAD = "a_load"
     LOAD = "load"
     STORE = "store"
@@ -78,12 +74,8 @@ opcode_to_binary = {
 
     Opcode.LIT: 0x06,  # +
     Opcode.TOA: 0x07,  # +
-    Opcode.TOB: 0x08,  # +
     Opcode.TOSTACKFROMA: 0x09,  # +
-    Opcode.TOSTACKFROMB: 0x0A,  # + TODO: вырезать
-    Opcode.BSTORE: 0x0B,  #
     Opcode.ASTORE: 0x0C,  #
-    Opcode.BLOAD: 0x0D,  #
     Opcode.ALOAD: 0x0E,  #
     Opcode.LOAD: 0x0F,
     Opcode.STORE: 0x1F,  #
@@ -129,12 +121,8 @@ binary_to_opcode = {
 
     0x06: Opcode.LIT,
     0x07: Opcode.TOA,
-    0x08: Opcode.TOB,
     0x09: Opcode.TOSTACKFROMA,
-    0x0A: Opcode.TOSTACKFROMB,
-    0x0B: Opcode.BSTORE,
     0x0C: Opcode.ASTORE,
-    0x0D: Opcode.BLOAD,
     0x0E: Opcode.ALOAD,
     0x0F: Opcode.LOAD,
 
