@@ -83,9 +83,9 @@
 
 ---
 ## Картинки
-![датапас](images/4_lab_ak_reborn.drawio.png)
-![ку](images/cu_4_lab_ak_reborn.drawio.png)
-![стеке](images/stack%204_lab_ak.drawio.png)
+![датапас](images/4_lab_ak_reborn.drawio.svg)
+![ку](images/cu_4_lab_ak_reborn.drawio.svg)
+![стеке](images/stack%204_lab_ak.drawio.svg)
 ---
 ## Организация памяти и аппаратных стеков
 
