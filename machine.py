@@ -1030,6 +1030,8 @@ def run_cpu(code_file, input_file, config_file):
     print(f"\nЗатрачено тактов: {cu.current_tick()}")
     print("--- Дамп первых 50 ячеек Data Memory ---")
     print(dp.data_memory[:50])
+    print("--- Дамп первых 100 ячеек Command Memory ---")
+    print(cu.command_memory[:100])
 
 
 
